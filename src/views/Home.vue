@@ -38,9 +38,9 @@ onMounted(async () => {
         <RouterLink to="/about" class="secondary-btn">더 알아보기</RouterLink>
       </div>
 
-      <div class="message-box">
-        <p class="message">{{ message }}</p>
-      </div>
+<!--      <div class="message-box">-->
+<!--        <p class="message">{{ message }}</p>-->
+<!--      </div>-->
     </main>
   </div>
 </template>
