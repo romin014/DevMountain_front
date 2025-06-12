@@ -7,7 +7,7 @@ const message = ref('로딩 중...')
 
 onMounted(async () => {
   try {
-    const res = await axios.get('http://localhost:8080/users/test', {withCredentials: true})
+    const res = await axios.get('http://localhost:8080', {withCredentials: true})
     message.value = res.data
   } catch (e) {
     message.value = '백엔드 연결 실패'
