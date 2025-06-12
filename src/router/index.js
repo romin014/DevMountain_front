@@ -4,6 +4,7 @@ import Home from '../views/Home.vue';
 import Login from '../views/Login.vue';
 import SignUp from '../views/SignUp.vue';
 import GetUser from '../views/GetUser.vue';
+import ChatRoom from "../views/ChatRoom.vue";
 
 const routes = [
     {
@@ -25,6 +26,11 @@ const routes = [
         path: '/users/me',
         name: 'profile',
         component: GetUser
+    },
+    {
+        path: '/chatrooms',
+        name: 'chatroom',
+        component: ChatRoom
     },
     // TODO : 채팅방 주소 들어가야함
     // 404 Not Found 라우트 (가장 마지막에 위치)

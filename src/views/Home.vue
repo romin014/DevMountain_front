@@ -25,6 +25,7 @@ onMounted(async () => {
         <RouterLink to="/users/login" class="nav-link">로그인</RouterLink>
         <RouterLink to="/users/signup" class="nav-link">회원가입</RouterLink>
         <RouterLink to="/users/me" class="nav-link">내 정보</RouterLink>
+        <RouterLink to="/chatrooms" class="nav-link">채팅방</RouterLink>
       </nav>
     </header>
 
