@@ -30,25 +30,25 @@
 
 <script>
 import { Client } from '@stomp/stompjs'
+import SockJS from 'sockjs-client/dist/sockjs'
 
 export default {
-  name: "Chatroom",
+  name: 'Chatroom',
   data() {
     return {
       client: null,
-      messages: [
-        { sender: "시스템", text: "채팅방에 입장했습니다." }
-      ],
-      newMessage: "",
-      username: "사용자"
-    };
+      messages: [{ sender: '시스템', text: '채팅방에 입장했습니다.' }],
+      newMessage: '',
+      username: '사용자' // 필요 시 로그인된 유저 정보로 대체 가능
+    }
   },
   methods: {
     connect() {
       this.client = new Client({
-        brokerURL: 'ws://localhost:8080/ws',
+        webSocketFactory: () => new SockJS('/ws'),
         reconnectDelay: 5000,
         onConnect: () => {
+          console.log('WebSocket 연결됨')
           this.client.subscribe('/topic/messages', (message) => {
             const parsed = JSON.parse(message.body)
             this.messages.push(parsed)
@@ -56,10 +56,11 @@ export default {
           })
         },
         onStompError: (frame) => {
-          console.error('Broker reported error:', frame.headers['message'])
-          console.error('Additional details:', frame.body)
+          console.error('STOMP 오류:', frame.headers['message'])
+          console.error('상세:', frame.body)
         }
       })
+
       this.client.activate()
     },
     sendMessage() {
@@ -72,18 +73,16 @@ export default {
 
       if (this.client && this.client.connected) {
         this.client.publish({
-          destination: '/chatroom',
+          destination: '/chatrooms',
           body: JSON.stringify(msg)
         })
       }
 
-      this.messages.push(msg)
       this.newMessage = ''
-      this.scrollToBottom()
     },
     scrollToBottom() {
       this.$nextTick(() => {
-        const chatMessages = this.$el.querySelector(".chat-messages")
+        const chatMessages = this.$el.querySelector('.chat-messages')
         if (chatMessages) {
           chatMessages.scrollTop = chatMessages.scrollHeight
         }
@@ -103,6 +102,7 @@ export default {
   }
 }
 </script>
+
 
 <style>
 body {

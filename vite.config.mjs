@@ -1,17 +1,32 @@
-import { defineConfig } from 'vite'
+import {defineConfig} from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
-import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
-import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill'
+import {NodeGlobalsPolyfillPlugin} from '@esbuild-plugins/node-globals-polyfill'
+import {NodeModulesPolyfillPlugin} from '@esbuild-plugins/node-modules-polyfill'
 import rollupNodePolyFill from 'rollup-plugin-node-polyfills'
-import { fileURLToPath } from 'node:url'
-import { dirname } from 'node:path'
+import {fileURLToPath} from 'node:url'
+import {dirname} from 'node:path'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 export default defineConfig({
+    define: {
+        'process.env': {}, // 일부 라이브러리가 process 참조 시 에러 방지
+        global: 'globalThis',
+    },
+    resolve: {
+        alias: {
+            crypto: 'crypto-browserify',
+            stream: 'stream-browserify',
+            buffer: 'buffer/',
+            util: 'util/',
+            process: 'process/browser',
+            '@': fileURLToPath(new URL('./src', import.meta.url)),
+        }
+    },
     optimizeDeps: {
+        include: ['sockjs-client', 'crypto-browserify', 'buffer', 'util', 'process'],
         esbuildOptions: {
             define: {
                 global: 'globalThis',
@@ -19,11 +34,13 @@ export default defineConfig({
             plugins: [
                 NodeGlobalsPolyfillPlugin({
                     buffer: true,
+                    process: true,
                 }),
                 NodeModulesPolyfillPlugin(),
             ],
         },
     },
+
     build: {
         rollupOptions: {
             plugins: [rollupNodePolyFill()],
@@ -35,15 +52,12 @@ export default defineConfig({
                 target: 'http://localhost:8080',
                 changeOrigin: true,
             },
+            '/ws': {
+                target: 'http://localhost:8080',
+                ws: true,
+                changeOrigin: true,
+            },
         },
     },
-    plugins: [vue(), vueDevTools()],
-    resolve: {
-        alias: {
-            '@': fileURLToPath(new URL('./src', import.meta.url)),
-            buffer: 'rollup-plugin-node-polyfills/polyfills/buffer-es6',
-            util: 'rollup-plugin-node-polyfills/polyfills/util',
-            process: 'rollup-plugin-node-polyfills/polyfills/process-es6',
-        },
-    },
+    plugins: [vue(), vueDevTools()]
 })
