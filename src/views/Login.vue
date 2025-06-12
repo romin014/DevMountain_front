@@ -74,7 +74,7 @@ const login = async () => {
 </script>
 
 <style scoped>
-/* 다크 테마 색상 기반 스타일 */
+
 .login-container {
   max-width: 420px;
   margin: 80px auto;

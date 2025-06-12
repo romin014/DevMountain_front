@@ -1,9 +1,18 @@
 <template>
+  <button class="home-box" @click="goHome">Home</button>
   <div class="chatroom">
-    <h2>채팅방</h2>
+    <h2>💬 채팅방</h2>
+
     <div class="chat-messages">
-      <div v-for="(msg, index) in messages" :key="index" class="chat-message">
-        <strong>{{ msg.sender }}:</strong> {{ msg.text }}
+      <div
+          v-for="(msg, index) in messages"
+          :key="index"
+          :class="['chat-message', msg.sender === username ? 'from-user' : 'from-other']"
+      >
+        <div class="message-bubble">
+          <span class="sender">{{ msg.sender }}</span>
+          <div class="text">{{ msg.text }}</div>
+        </div>
       </div>
     </div>
 
@@ -31,13 +40,13 @@ export default {
         { sender: "시스템", text: "채팅방에 입장했습니다." }
       ],
       newMessage: "",
-      username: "사용자" // 이후 로그인 연동 시 동적으로 설정 가능
+      username: "사용자"
     };
   },
   methods: {
     connect() {
       this.client = new Client({
-        brokerURL: 'ws://localhost:8080/ws', // Spring Boot WebSocket 엔드포인트
+        brokerURL: 'ws://localhost:8080/ws',
         reconnectDelay: 5000,
         onConnect: () => {
           this.client.subscribe('/topic/messages', (message) => {
@@ -79,6 +88,9 @@ export default {
           chatMessages.scrollTop = chatMessages.scrollHeight
         }
       })
+    },
+    goHome() {
+      this.$router.push('/') // ✅ Vue Options API에서는 이렇게 써야 함
     }
   },
   mounted() {
@@ -94,34 +106,119 @@ export default {
 
 <style scoped>
 .chatroom {
-  max-width: 500px;
-  margin: 0 auto;
-  padding: 20px;
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 24px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+
+.home-box {
+  margin-left: 500px;
+  margin-top: 50px;
+  margin-bottom: 12px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 20px;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.2s ease;
+}
+
+.chatroom h2 {
+  text-align: center;
+  margin-bottom: 16px;
+  color: #333;
 }
 
 .chat-messages {
-  border: 1px solid #ccc;
-  height: 300px;
+  height: 400px;
   overflow-y: auto;
-  padding: 10px;
-  margin-bottom: 10px;
-  background-color: #fafafa;
+  padding: 16px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .chat-message {
-  margin-bottom: 5px;
+  display: flex;
+}
+
+.from-user {
+  justify-content: flex-end;
+}
+
+.from-other {
+  justify-content: flex-start;
+}
+
+.message-bubble {
+  max-width: 70%;
+  padding: 12px;
+  border-radius: 12px;
+  background-color: #e0e0e0;
+  position: relative;
+  color: #333;
+}
+
+.from-user .message-bubble {
+  background-color: #daf1ff;
+  color: #000;
+  border-top-right-radius: 0;
+}
+
+.from-other .message-bubble {
+  background-color: #f0f0f0;
+  color: #333;
+  border-top-left-radius: 0;
+}
+
+.sender {
+  font-weight: bold;
+  font-size: 12px;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.text {
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 .chat-form {
   display: flex;
+  gap: 8px;
 }
 
 .chat-form input {
   flex: 1;
-  padding: 5px;
+  padding: 10px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
 }
 
 .chat-form button {
-  margin-left: 5px;
+  padding: 10px 16px;
+  background-color: #3498db;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.chat-form button:hover {
+  background-color: #2980b9;
 }
 </style>
