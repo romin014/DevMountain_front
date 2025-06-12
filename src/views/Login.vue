@@ -44,7 +44,8 @@ const login = async () => {
       password: password.value
     }, { withCredentials: true });
     console.log('로그인 성공:', res.data);
-    router.push('/home'); // 로그인 성공 후 홈으로 이동
+    router.push('/'); // 로그인 성공 후 홈으로 이동
+    // todo : 로그인 성공 후 채팅방 화면으로 이동 예정
   } catch (err) {
     console.error('로그인 실패', err);
     // 에러 메시지 표시

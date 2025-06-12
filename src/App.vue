@@ -1,5 +1,4 @@
 <script setup>
-import TheWelcome from './components/TheWelcome.vue'
 import {ref, onMounted} from 'vue'
 import axios from 'axios'
 
@@ -19,6 +18,7 @@ onMounted(async () => {
   <div>
     <h1>Hello</h1>
     <nav>-->
+<!--      todo : app에서 말고 홈 화면 만들어야 함. Home.vue-->
       <RouterLink to="/">홈</RouterLink>
       |
       <RouterLink to="/users/login">로그인</RouterLink>
@@ -30,25 +30,6 @@ onMounted(async () => {
     <router-view/>
   </div>
 </template>
-
-<!--<template>-->
-<!--  <header>-->
-<!--    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />-->
-
-<!--    <div class="wrapper">-->
-<!--      <nav>-->
-<!--        <RouterLink to="/">홈</RouterLink> |-->
-<!--        <RouterLink to="/users/login">로그인</RouterLink> |-->
-<!--        <RouterLink to="/users/signup">회원가입</RouterLink> |-->
-<!--        <RouterLink to="/users/me">내 정보</RouterLink>-->
-<!--      </nav>-->
-<!--    </div>-->
-<!--  </header>-->
-
-<!--  <main>-->
-<!--    <TheWelcome />-->
-<!--  </main>-->
-<!--</template>-->
 
 <style scoped>
 header {

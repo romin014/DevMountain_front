@@ -1,5 +1,3 @@
-import axios from 'axios'
-
 <template>
   <div>
     <h2>회원가입</h2>
@@ -25,7 +23,7 @@ import axios from 'axios'
         <input id="signup-categories" v-model="categories" placeholder="카테고리 (,로 구분)"/>
         <!-- 참고: 실제 서비스에서는 미리 정의된 카테고리 목록에서 선택하는 UI가 더 좋습니다. -->
       </div>
-      <button type="submit" :disabled="isLoading">
+      <button type="submit" :disabled="isLoading" @click="signUp('signUp')">
         {{ isLoading ? '가입 중...' : '회원가입' }}
       </button>
       <p v-if="errorMessage" style="color: red;">{{ errorMessage }}</p>
@@ -40,6 +38,8 @@ import axios from 'axios'
   </div>
 </template>
 <script>
+import axios from 'axios'
+
 export default {
   data: () => ({
     email: "",
@@ -79,10 +79,10 @@ export default {
         alert("모든 필드를 작성해주세요.");
         return;
       }
-      if (this.password !== this.confirmPassword) {
-        alert("비밀번호가 일치하지 않습니다.");
-        return;
-      }
+      // if (this.password !== this.confirmPassword) {
+      //   alert("비밀번호가 일치하지 않습니다.");
+      //   return;
+      // }
 
       const saveData = {
         email: this.email,
@@ -101,7 +101,7 @@ export default {
           alert(response.data.errorMessage);
         } else {
           alert("회원가입이 완료되었습니다. 로그인 화면으로 돌아갑니다");
-          this.$router.push({path: './login'});
+          this.$router.push({path: '/users/login'});
         }
       }).catch(error => {
         console.error("회원가입 실패:", error.response || error.message);
@@ -109,7 +109,7 @@ export default {
       });
     },
     linkToLogin() {
-      this.$router.push({path: '/login'});
+      this.$router.push({path: '/users/login'});
     },
     socialLogin(provider) {
       const baseUrl = "http://localhost:8080/oauth2/authorization";
