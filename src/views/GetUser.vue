@@ -1,9 +1,9 @@
 <template>
   <div class="page-container">
-    <!-- 검정 박스 바로 위 왼쪽에 Home 버튼 -->
+
     <button class="home-box" @click="goHome">Home</button>
 
-    <!-- 검정 박스 영역 -->
+
     <div class="profile-container">
       <h2 class="profile-title">내 프로필</h2>
 
@@ -72,9 +72,9 @@ onMounted(async () => {
   position: relative;
 }
 
-/* 오직 위치만 왼쪽으로 이동시킴 */
+
 .home-box {
-  margin-left: 400px; /* ← 핵심: 왼쪽으로 붙임 */
+  margin-left: 400px;
   margin-bottom: 12px;
   background-color: #1e1e1e;
   color: white;
