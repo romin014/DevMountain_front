@@ -25,7 +25,6 @@ onMounted(async () => {
         <RouterLink to="/users/login" class="nav-link">로그인</RouterLink>
         <RouterLink to="/users/signup" class="nav-link">회원가입</RouterLink>
         <RouterLink to="/users/me" class="nav-link">내 정보</RouterLink>
-        <RouterLink to="/chatrooms" class="nav-link">채팅방</RouterLink>
       </nav>
     </header>
 
@@ -35,7 +34,7 @@ onMounted(async () => {
         Devmountain은 개발자 성장을 위한 지식과 도구를 제공합니다.
       </p>
       <div class="btn-group">
-        <RouterLink to="/start" class="primary-btn">시작하기</RouterLink>
+        <RouterLink to="/chatrooms" class="primary-btn">시작하기</RouterLink>
         <RouterLink to="/about" class="secondary-btn">더 알아보기</RouterLink>
       </div>
 
