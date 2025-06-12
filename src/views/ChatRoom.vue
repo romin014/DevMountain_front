@@ -90,7 +90,7 @@ export default {
       })
     },
     goHome() {
-      this.$router.push('/') // ✅ Vue Options API에서는 이렇게 써야 함
+      this.$router.push('/')
     }
   },
   mounted() {
@@ -104,44 +104,56 @@ export default {
 }
 </script>
 
-<style scoped>
-.chatroom {
-  max-width: 600px;
-  margin: 40px auto;
-  padding: 24px;
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+<style>
+body {
+  background-color: #2f2f31; /* 채팅방보다 10% 밝은 전체 배경 */
+  margin: 0;
+  padding: 0;
   font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+
+.chatroom {
+  max-width: 700px;
+  margin: 60px auto;
+  padding: 24px;
+  background-color: #2c2c2e;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  color: #f2f2f2;
 }
 
 .home-box {
   margin-left: 500px;
-  margin-top: 50px;
-  margin-bottom: 12px;
-  background-color: #3498db;
-  color: white;
+  margin-top: 40px;
+  margin-bottom: -30px;
+  background-color: #3a3a3c;
+  color: #ffffff;
   border: none;
   border-radius: 10px;
   padding: 8px 20px;
   font-weight: bold;
   font-size: 15px;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   transition: background-color 0.2s ease;
+}
+
+.home-box:hover {
+  background-color: #505053;
 }
 
 .chatroom h2 {
   text-align: center;
   margin-bottom: 16px;
-  color: #333;
+  color: #f2f2f2;
 }
 
 .chat-messages {
   height: 400px;
   overflow-y: auto;
   padding: 16px;
-  background-color: #f5f5f5;
+  background-color: #1c1c1e;
   border-radius: 8px;
   margin-bottom: 16px;
   display: flex;
@@ -165,20 +177,20 @@ export default {
   max-width: 70%;
   padding: 12px;
   border-radius: 12px;
-  background-color: #e0e0e0;
+  background-color: #3a3a3c;
   position: relative;
-  color: #333;
+  color: #f2f2f2;
 }
 
 .from-user .message-bubble {
-  background-color: #daf1ff;
-  color: #000;
+  background-color: #0a84ff;
+  color: #fff;
   border-top-right-radius: 0;
 }
 
 .from-other .message-bubble {
-  background-color: #f0f0f0;
-  color: #333;
+  background-color: #3a3a3c;
+  color: #f2f2f2;
   border-top-left-radius: 0;
 }
 
@@ -187,6 +199,7 @@ export default {
   font-size: 12px;
   margin-bottom: 4px;
   display: block;
+  color: #b0b0b0;
 }
 
 .text {
@@ -204,12 +217,14 @@ export default {
   padding: 10px;
   font-size: 14px;
   border-radius: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid #555;
+  background-color: #2c2c2e;
+  color: #fff;
 }
 
 .chat-form button {
   padding: 10px 16px;
-  background-color: #3498db;
+  background-color: #0a84ff;
   color: white;
   font-weight: bold;
   border: none;
@@ -219,6 +234,6 @@ export default {
 }
 
 .chat-form button:hover {
-  background-color: #2980b9;
+  background-color: #0066cc;
 }
 </style>
