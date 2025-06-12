@@ -2,25 +2,36 @@
   <div class="profile-container">
     <h2 class="profile-title">내 프로필</h2>
 
+    <!-- 로딩 중 -->
     <div v-if="isLoading" class="loading">로딩 중...</div>
 
+    <!-- 에러 메시지 -->
     <div v-else-if="errorMessage" class="error-message">
       {{ errorMessage }}
     </div>
 
-    <div v-else-if="user" class="profile-card">
-      <div class="avatar">
-        <span>{{ user.name?.charAt(0) || "U" }}</span>
-      </div>
-      <div class="info">
-        <p><strong>이메일:</strong> {{ user.email }}</p>
-        <p><strong>이름:</strong> {{ user.name }}</p>
-        <p><strong>전화번호:</strong> {{ user.phoneNumber }}</p>
-        <p><strong>카테고리:</strong> {{ user.categories.map(c => c.name).join(', ') }}</p>
-      </div>
+    <!-- 유저 정보 출력 -->
+    <div v-else>
+      <template v-if="user">
+        <div class="profile-card">
+          <div class="avatar">
+            <span>{{ user.name?.charAt(0) || "U" }}</span>
+          </div>
+          <div class="info">
+            <p><strong>이메일:</strong> {{ user.email }}</p>
+            <p><strong>이름:</strong> {{ user.name }}</p>
+            <p><strong>전화번호:</strong> {{ user.phoneNumber }}</p>
+            <p>
+              <strong>카테고리:</strong>
+              {{ (user.categories ?? []).map(c => c.name).join(', ') }}
+            </p>
+          </div>
+        </div>
+      </template>
+      <template v-else>
+        <div class="no-user">유저 정보를 불러올 수 없습니다.</div>
+      </template>
     </div>
-
-    <div v-else class="no-user">유저 정보를 불러올 수 없습니다.</div>
   </div>
 </template>
 
@@ -35,6 +46,10 @@ const errorMessage = ref('')
 onMounted(async () => {
   try {
     const res = await axios.get('/users/me', { withCredentials: true })
+    console.log('백엔드 응답:', res.data)
+
+    // 👉 구조 확인 후 필요한 곳으로 할당
+    // 예: res.data.data 또는 res.data
     user.value = res.data
   } catch (err) {
     console.error('유저 정보 로딩 실패', err)
