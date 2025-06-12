@@ -1,19 +1,30 @@
 <template>
-  <div>
-    <h2>로그인</h2>
-    <form @submit.prevent="login">
-      <div>
+  <div class="login-container">
+    <h2 class="login-title">로그인</h2>
+    <form @submit.prevent="login" class="login-form">
+      <div class="form-group">
         <label for="email">이메일:</label>
-        <input id="email" v-model="email" placeholder="이메일" required />
+        <input
+            id="email"
+            v-model="email"
+            placeholder="이메일"
+            required
+        />
       </div>
-      <div>
+      <div class="form-group">
         <label for="password">비밀번호:</label>
-        <input id="password" v-model="password" type="password" placeholder="비밀번호" required />
+        <input
+            id="password"
+            v-model="password"
+            type="password"
+            placeholder="비밀번호"
+            required
+        />
       </div>
-      <button type="submit" :disabled="isLoading">
+      <button type="submit" :disabled="isLoading" class="login-button">
         {{ isLoading ? '로그인 중...' : '로그인' }}
       </button>
-      <p v-if="errorMessage" style="color: red;">{{ errorMessage }}</p>
+      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
     </form>
   </div>
 </template>
@@ -39,29 +50,110 @@ const login = async () => {
   errorMessage.value = '';
 
   try {
-    const res = await axios.post('/users/login', {
-      email: email.value,
-      password: password.value
-    }, { withCredentials: true });
+    const res = await axios.post(
+        '/users/login',
+        {
+          email: email.value,
+          password: password.value
+        },
+        { withCredentials: true }
+    );
     console.log('로그인 성공:', res.data);
-    router.push('/'); // 로그인 성공 후 홈으로 이동
-    // todo : 로그인 성공 후 채팅방 화면으로 이동 예정
+    router.push('/');
   } catch (err) {
     console.error('로그인 실패', err);
-    // 에러 메시지 표시
-    if (err.response && err.response.data && err.response.data.message) {
+    if (err.response?.data?.message) {
       errorMessage.value = '로그인 실패: ' + err.response.data.message;
     } else {
       errorMessage.value = '로그인 중 오류가 발생했습니다.';
     }
   } finally {
-    isLoading.value = false; // 로딩 종료
+    isLoading.value = false;
   }
 };
 </script>
 
 <style scoped>
-div { margin-bottom: 10px; }
-label { display: inline-block; width: 80px; }
-input { margin-bottom: 5px; }
+/* 다크 테마 색상 기반 스타일 */
+.login-container {
+  max-width: 420px;
+  margin: 80px auto;
+  padding: 30px;
+  background-color: #1e1e1e;
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #f1f1f1;
+}
+
+.login-title {
+  font-size: 28px;
+  font-weight: bold;
+  text-align: center;
+  color: #ffffff;
+  margin-bottom: 24px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: block;
+  color: #cccccc;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  color: #f1f1f1;
+  border-radius: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+input:focus {
+  border-color: #00bcd4;
+  outline: none;
+}
+
+.login-button {
+  margin-top: 10px;
+  padding: 12px;
+  background-color: #00bcd4;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.login-button:hover {
+  background-color: #00acc1;
+}
+
+.login-button:disabled {
+  background-color: #555;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.error-message {
+  margin-top: 16px;
+  color: #ff5252;
+  font-weight: bold;
+  text-align: center;
+}
 </style>
