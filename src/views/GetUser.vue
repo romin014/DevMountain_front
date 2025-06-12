@@ -1,55 +1,58 @@
 <template>
-  <div class="profile-container">
-    <h2 class="profile-title">내 프로필</h2>
+  <div class="page-container">
+    <!-- 검정 박스 바로 위 왼쪽에 Home 버튼 -->
+    <button class="home-box" @click="goHome">Home</button>
 
-    <!-- 로딩 중 -->
-    <div v-if="isLoading" class="loading">로딩 중...</div>
+    <!-- 검정 박스 영역 -->
+    <div class="profile-container">
+      <h2 class="profile-title">내 프로필</h2>
 
-    <!-- 에러 메시지 -->
-    <div v-else-if="errorMessage" class="error-message">
-      {{ errorMessage }}
-    </div>
+      <div v-if="isLoading" class="loading">로딩 중...</div>
 
-    <!-- 유저 정보 출력 -->
-    <div v-else>
-      <template v-if="user">
-        <div class="profile-card">
-          <div class="avatar">
-            <span>{{ user.name?.charAt(0) || "U" }}</span>
+      <div v-else-if="errorMessage" class="error-message">
+        {{ errorMessage }}
+      </div>
+
+      <div v-else>
+        <template v-if="user">
+          <div class="profile-card">
+            <div class="avatar">
+              <span>{{ user.name?.charAt(0) || "U" }}</span>
+            </div>
+            <div class="info">
+              <p><strong>이메일:</strong> {{ user.email }}</p>
+              <p><strong>이름:</strong> {{ user.name }}</p>
+              <p><strong>전화번호:</strong> {{ user.phoneNumber }}</p>
+              <p><strong>카테고리:</strong> {{ (user.categories ?? []).map(c => c.name).join(', ') }}</p>
+            </div>
           </div>
-          <div class="info">
-            <p><strong>이메일:</strong> {{ user.email }}</p>
-            <p><strong>이름:</strong> {{ user.name }}</p>
-            <p><strong>전화번호:</strong> {{ user.phoneNumber }}</p>
-            <p>
-              <strong>카테고리:</strong>
-              {{ (user.categories ?? []).map(c => c.name).join(', ') }}
-            </p>
-          </div>
-        </div>
-      </template>
-      <template v-else>
-        <div class="no-user">유저 정보를 불러올 수 없습니다.</div>
-      </template>
+        </template>
+        <template v-else>
+          <div class="no-user">유저 정보를 불러올 수 없습니다.</div>
+        </template>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
 
+const router = useRouter()
 const user = ref(null)
 const isLoading = ref(true)
 const errorMessage = ref('')
+
+const goHome = () => {
+  router.push('/')
+}
 
 onMounted(async () => {
   try {
     const res = await axios.get('/users/me', { withCredentials: true })
     console.log('백엔드 응답:', res.data)
-
-    // 👉 구조 확인 후 필요한 곳으로 할당
-    // 예: res.data.data 또는 res.data
     user.value = res.data
   } catch (err) {
     console.error('유저 정보 로딩 실패', err)
@@ -61,9 +64,37 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.page-container {
+  background-color: #ffffff;
+  min-height: 100vh;
+  padding: 40px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* 오직 위치만 왼쪽으로 이동시킴 */
+.home-box {
+  margin-left: 400px; /* ← 핵심: 왼쪽으로 붙임 */
+  margin-bottom: 12px;
+  background-color: #1e1e1e;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 20px;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.2s ease;
+}
+
+.home-box:hover {
+  background-color: #5ca7cb;
+}
+
 .profile-container {
+  margin: 40px auto 0 auto;
   max-width: 600px;
-  margin: 80px auto;
   padding: 30px;
   background-color: #1e1e1e;
   border-radius: 14px;
