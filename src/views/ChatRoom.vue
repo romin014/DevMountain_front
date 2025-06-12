@@ -165,14 +165,6 @@ body {
   display: flex;
 }
 
-.from-user {
-  justify-content: flex-end;
-}
-
-.from-other {
-  justify-content: flex-start;
-}
-
 .message-bubble {
   max-width: 70%;
   padding: 12px;
