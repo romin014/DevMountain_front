@@ -5,9 +5,6 @@ import {NodeGlobalsPolyfillPlugin} from '@esbuild-plugins/node-globals-polyfill'
 import {NodeModulesPolyfillPlugin} from '@esbuild-plugins/node-modules-polyfill'
 import rollupNodePolyFill from 'rollup-plugin-node-polyfills'
 import {fileURLToPath} from 'node:url'
-import {dirname} from 'node:path'
-
-const __filename = fileURLToPath(import.meta.url)
 
 export default defineConfig({
     define: {
@@ -55,6 +52,7 @@ export default defineConfig({
                 target: 'http://localhost:8080',
                 ws: true,
                 changeOrigin: true,
+                secure: false
             },
         },
     },

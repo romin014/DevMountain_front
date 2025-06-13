@@ -27,6 +27,11 @@ const routes = [
         component: GetUser
     },
     {
+        path: '/chatrooms/:roomId',
+        name: 'chatroomRoomId',
+        component: ChatRoom
+    },
+    {
         path: '/chatrooms',
         name: 'chatroom',
         component: ChatRoom

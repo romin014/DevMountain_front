@@ -51,7 +51,7 @@ const goHome = () => {
 
 onMounted(async () => {
   try {
-    const res = await axios.get('/users/me', { withCredentials: true })
+    const res = await axios.get('http://localhost:8080/users/me', { withCredentials: true })
     console.log('백엔드 응답:', res.data)
     user.value = res.data
   } catch (err) {

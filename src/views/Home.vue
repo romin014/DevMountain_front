@@ -1,20 +1,62 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import {ref, onMounted} from 'vue'
+import {useRouter} from 'vue-router'
 import axios from 'axios'
 
 const message = ref('로딩 중...')
+const router = useRouter()
+// const username = localStorage.getItem('username') || '익명'
+const username = ref(localStorage.getItem('username') || '익명')
+
+const handleStart = async () => {
+  console.log('🎯 handleStart 실행됨')
+
+  if (isGuest.value) {
+    const guestRoomId = `${Date.now()}${Math.floor(Math.random() * 1000)}`
+    console.log('✅ 비회원 guest room으로 이동:', guestRoomId)
+    router.push(`/chatrooms/${guestRoomId}`)
+  } else {
+    console.log('✅ 회원 채팅방 생성 요청 시도')
+    try {
+      const response = await axios.post(
+          'http://localhost:8080/chatrooms',
+          {chatroomName: `${username}의 채팅방`},
+          {withCredentials: true}
+      )
+      console.log('🎉 채팅방 생성 성공:', response.data)
+      const chatroomId = response.data.result.chatroomId
+      router.push(`/chatrooms/${chatroomId}`)
+    } catch (error) {
+      console.error('❌ 채팅방 생성 실패:', error.response?.data || error.message)
+      alert('채팅방 생성 실패')
+    }
+  }
+}
+const isGuest = ref(true)
 
 onMounted(async () => {
   try {
-    const res = await axios.get('http://localhost:8080/users/test', {
+    const res = await axios.get('http://localhost:8080/users/me', {
       withCredentials: true
     })
-    message.value = res.data
+    if (typeof res.data !== 'object' || res.data.name === undefined) {
+      throw new Error('비회원 응답입니다.')
+    }
+    username.value = res.data.name
+    isGuest.value = false
+    localStorage.setItem('username', res.data.name)
+    console.log('👤 로그인 사용자:', username.value)
   } catch (e) {
-    message.value = '⚠️ 백엔드 연결 실패'
+    isGuest.value = true
+    username.value = '익명'
+    localStorage.removeItem('username')
+    console.log('👤 비회원 사용자로 인식됨')
   }
 })
+
+
 </script>
+
 
 <template>
   <div class="wrapper">
@@ -34,13 +76,13 @@ onMounted(async () => {
         Devmountain은 개발자 성장을 위한 지식과 도구를 제공합니다.
       </p>
       <div class="btn-group">
-        <RouterLink to="/chatrooms" class="primary-btn">시작하기</RouterLink>
-        <RouterLink to="/about" class="secondary-btn">더 알아보기</RouterLink>
+        <button class="primary-btn" @click="handleStart">시작하기</button>
+        <!--        <RouterLink to="/about" class="secondary-btn">더 알아보기</RouterLink>-->
       </div>
 
-<!--      <div class="message-box">-->
-<!--        <p class="message">{{ message }}</p>-->
-<!--      </div>-->
+      <!--      <div class="message-box">-->
+      <!--        <p class="message">{{ message }}</p>-->
+      <!--      </div>-->
     </main>
   </div>
 </template>

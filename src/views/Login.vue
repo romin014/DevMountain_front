@@ -51,7 +51,7 @@ const login = async () => {
 
   try {
     const res = await axios.post(
-        '/users/login',
+        'http://localhost:8080/users/login',
         {
           email: email.value,
           password: password.value
@@ -59,6 +59,12 @@ const login = async () => {
         { withCredentials: true }
     );
     console.log('로그인 성공:', res.data);
+
+    // 로그인 성공 시 사용자 이름을 localStorage에 저장
+    // (백엔드 응답 구조에 따라 name 위치 조정 필요)
+    localStorage.setItem('name', res.data.name || '익명');
+
+    // 로그인 후 홈 페이지 이동
     router.push('/');
   } catch (err) {
     console.error('로그인 실패', err);
@@ -71,6 +77,7 @@ const login = async () => {
     isLoading.value = false;
   }
 };
+
 </script>
 
 <style scoped>

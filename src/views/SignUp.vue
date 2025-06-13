@@ -4,27 +4,27 @@
     <form @submit.prevent="signUp" class="signup-form">
       <div class="form-group">
         <label for="signup-email">이메일:</label>
-        <input id="signup-email" v-model="email" placeholder="이메일" required />
+        <input id="signup-email" v-model="email" placeholder="이메일" required/>
       </div>
 
       <div class="form-group">
         <label for="signup-password">비밀번호:</label>
-        <input id="signup-password" v-model="password" type="password" placeholder="비밀번호" required />
+        <input id="signup-password" v-model="password" type="password" placeholder="비밀번호" required/>
       </div>
 
       <div class="form-group">
         <label for="signup-name">이름:</label>
-        <input id="signup-name" v-model="name" placeholder="이름" required />
+        <input id="signup-name" v-model="name" placeholder="이름" required/>
       </div>
 
       <div class="form-group">
         <label for="signup-phone">전화번호:</label>
-        <input id="signup-phone" v-model="phoneNumber" placeholder="전화번호" required />
+        <input id="signup-phone" v-model="phoneNumber" placeholder="전화번호" required/>
       </div>
 
       <div class="form-group">
         <label for="signup-categories">카테고리:</label>
-        <input id="signup-categories" v-model="categories" placeholder="카테고리 (,로 구분)" />
+        <input id="signup-categories" v-model="categories" placeholder="카테고리 (,로 구분)"/>
       </div>
 
       <button type="submit" :disabled="isLoading" class="signup-button">
@@ -71,7 +71,9 @@ export default {
         password: this.password,
         name: this.name,
         phoneNumber: this.phoneNumber,
-        categories: this.categories.split(',').map(c => c.trim()),
+        categories: this.categories.split(',')
+            .map(c => c.trim())
+            .filter(c => c.length > 0)
       };
 
       axios.post("http://localhost:8080/users/signup", saveData, {
@@ -83,7 +85,7 @@ export default {
           alert(response.data.errorMessage);
         } else {
           alert("회원가입이 완료되었습니다. 로그인 화면으로 돌아갑니다");
-          this.$router.push({ path: '/users/login' });
+          this.$router.push({path: '/users/login'});
         }
       }).catch(error => {
         console.error("회원가입 실패:", error.response || error.message);
@@ -91,7 +93,7 @@ export default {
       });
     },
     socialLogin(provider) {
-      const baseUrl = "http://localhost:8080/oauth2/authorization";
+      const baseUrl = "/oauth2/authorization";
       window.location.href = `${baseUrl}/${provider}`;
     }
   }

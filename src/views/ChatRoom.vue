@@ -1,9 +1,10 @@
 <template>
   <button class="home-box" @click="goHome">Home</button>
+
   <div class="chatroom">
     <h2>💬 채팅방</h2>
 
-    <div class="chat-messages">
+    <div class="chat-messages" ref="chatMessages">
       <div
           v-for="(msg, index) in messages"
           :key="index"
@@ -28,81 +29,84 @@
   </div>
 </template>
 
-<script>
-import { Client } from '@stomp/stompjs'
-import SockJS from 'sockjs-client/dist/sockjs'
+<script setup>
+import {ref, onMounted, onBeforeUnmount} from 'vue'
+import {useRoute} from 'vue-router'
 
-export default {
-  name: 'Chatroom',
-  data() {
-    return {
-      client: null,
-      messages: [{ sender: '시스템', text: '채팅방에 입장했습니다.' }],
-      newMessage: '',
-      username: '사용자' // 필요 시 로그인된 유저 정보로 대체 가능
-    }
-  },
-  methods: {
-    connect() {
-      this.client = new Client({
-        webSocketFactory: () => new SockJS('/ws'),
-        reconnectDelay: 5000,
-        onConnect: () => {
-          console.log('WebSocket 연결됨')
-          this.client.subscribe('/topic/messages', (message) => {
-            const parsed = JSON.parse(message.body)
-            this.messages.push(parsed)
-            this.scrollToBottom()
-          })
-        },
-        onStompError: (frame) => {
-          console.error('STOMP 오류:', frame.headers['message'])
-          console.error('상세:', frame.body)
-        }
+const username = ref(localStorage.getItem('username') || '익명')
+
+const route = useRoute()
+const roomId = route.params.roomId
+
+const socket = ref(null)
+const messages = ref([{sender: '시스템', text: '채팅방에 입장했습니다.'}])
+const newMessage = ref('')
+
+const connectWebSocket = () => {
+  socket.value = new WebSocket(`ws://localhost:8080/ws/chat?roomId=${roomId}`)
+
+  socket.value.onopen = () => {
+    console.log('WebSocket 연결 성공')
+  }
+
+  socket.value.onmessage = (event) => {
+    const data = JSON.parse(event.data)
+
+    // AI 응답만 화면에 출력
+    if (data.isAiResponse) {
+      messages.value.push({
+        sender: 'AI',
+        text: data.message
       })
-
-      this.client.activate()
-    },
-    sendMessage() {
-      if (!this.newMessage.trim()) return
-
-      const msg = {
-        sender: this.username,
-        text: this.newMessage
-      }
-
-      if (this.client && this.client.connected) {
-        this.client.publish({
-          destination: '/chatrooms',
-          body: JSON.stringify(msg)
-        })
-      }
-
-      this.newMessage = ''
-    },
-    scrollToBottom() {
-      this.$nextTick(() => {
-        const chatMessages = this.$el.querySelector('.chat-messages')
-        if (chatMessages) {
-          chatMessages.scrollTop = chatMessages.scrollHeight
-        }
-      })
-    },
-    goHome() {
-      this.$router.push('/')
     }
-  },
-  mounted() {
-    this.connect()
-  },
-  beforeUnmount() {
-    if (this.client) {
-      this.client.deactivate()
-    }
+
+    scrollToBottom()
+  }
+
+
+  socket.value.onclose = () => {
+    console.log('WebSocket 연결 종료')
+  }
+
+  socket.value.onerror = (error) => {
+    console.error('WebSocket 에러:', error)
   }
 }
-</script>
 
+const sendMessage = () => {
+  if (!newMessage.value.trim() || !socket.value || socket.value.readyState !== WebSocket.OPEN) return
+
+  const msg = newMessage.value.trim()
+
+  // 내가 보낸 메시지를 즉시 화면에 추가
+  messages.value.push({
+    sender: username.value,
+    text: msg
+  })
+
+  socket.value.send(msg)
+  newMessage.value = ''
+  scrollToBottom()
+}
+
+
+const scrollToBottom = () => {
+  setTimeout(() => {
+    const container = document.querySelector('.chat-messages')
+    if (container) container.scrollTop = container.scrollHeight
+  }, 100)
+}
+
+onMounted(() => {
+  connectWebSocket()
+})
+
+onBeforeUnmount(() => {
+  if (socket.value) {
+    socket.value.close()
+  }
+})
+</script>
 
 <style>
 body {
@@ -174,10 +178,18 @@ body {
   color: #f2f2f2;
 }
 
+.from-user {
+  justify-content: flex-end; /* 오른쪽 정렬 */
+}
+
 .from-user .message-bubble {
   background-color: #0a84ff;
   color: #fff;
   border-top-right-radius: 0;
+}
+
+.from-other {
+  justify-content: flex-start; /* 왼쪽 정렬 */
 }
 
 .from-other .message-bubble {
@@ -197,6 +209,7 @@ body {
 .text {
   font-size: 14px;
   line-height: 1.4;
+  word-wrap: break-word;
 }
 
 .chat-form {
