@@ -55,7 +55,7 @@ const connectWebSocket = () => {
     // AI 응답만 화면에 출력
     if (data.isAiResponse) {
       messages.value.push({
-        sender: 'AI',
+        sender: '시스템',
         text: data.message
       })
     }

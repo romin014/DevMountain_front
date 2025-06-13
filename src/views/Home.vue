@@ -9,25 +9,25 @@ const router = useRouter()
 const username = ref(localStorage.getItem('username') || '익명')
 
 const handleStart = async () => {
-  console.log('🎯 handleStart 실행됨')
+  console.log('handleStart 실행됨')
 
   if (isGuest.value) {
     const guestRoomId = `${Date.now()}${Math.floor(Math.random() * 1000)}`
-    console.log('✅ 비회원 guest room으로 이동:', guestRoomId)
+    console.log('비회원 guest room으로 이동:', guestRoomId)
     router.push(`/chatrooms/${guestRoomId}`)
   } else {
-    console.log('✅ 회원 채팅방 생성 요청 시도')
+    console.log('회원 채팅방 생성 요청 시도')
     try {
       const response = await axios.post(
           'http://localhost:8080/chatrooms',
           {chatroomName: `${username}의 채팅방`},
           {withCredentials: true}
       )
-      console.log('🎉 채팅방 생성 성공:', response.data)
+      console.log('채팅방 생성 성공:', response.data)
       const chatroomId = response.data.result.chatroomId
       router.push(`/chatrooms/${chatroomId}`)
     } catch (error) {
-      console.error('❌ 채팅방 생성 실패:', error.response?.data || error.message)
+      console.error('채팅방 생성 실패:', error.response?.data || error.message)
       alert('채팅방 생성 실패')
     }
   }
@@ -45,12 +45,12 @@ onMounted(async () => {
     username.value = res.data.name
     isGuest.value = false
     localStorage.setItem('username', res.data.name)
-    console.log('👤 로그인 사용자:', username.value)
+    console.log('로그인 사용자:', username.value)
   } catch (e) {
     isGuest.value = true
     username.value = '익명'
     localStorage.removeItem('username')
-    console.log('👤 비회원 사용자로 인식됨')
+    console.log('비회원 사용자로 인식됨')
   }
 })
 

@@ -93,7 +93,7 @@ export default {
       });
     },
     socialLogin(provider) {
-      const baseUrl = "/oauth2/authorization";
+      const baseUrl = "http://localhost:8080/oauth2/authorization";
       window.location.href = `${baseUrl}/${provider}`;
     }
   }
