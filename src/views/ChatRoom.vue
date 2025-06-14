@@ -106,6 +106,10 @@ onBeforeUnmount(() => {
     socket.value.close()
   }
 })
+
+const goHome = () => {
+  router.push('/home')
+}
 </script>
 
 <style>

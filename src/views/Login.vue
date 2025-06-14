@@ -65,7 +65,7 @@ const login = async () => {
     localStorage.setItem('name', res.data.name || '익명');
 
     // 로그인 후 홈 페이지 이동
-    router.push('/');
+    router.push('/home');
   } catch (err) {
     console.error('로그인 실패', err);
     if (err.response?.data?.message) {

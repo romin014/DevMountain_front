@@ -46,7 +46,7 @@ const isLoading = ref(true)
 const errorMessage = ref('')
 
 const goHome = () => {
-  router.push('/')
+  router.push('/home')
 }
 
 onMounted(async () => {
