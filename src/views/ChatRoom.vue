@@ -1,245 +1,332 @@
 <template>
-  <div class="chatroom">
-    <h2>{{ isGuest ? '비회원 채팅방' : '회원 채팅방' }}</h2>
-
-    <div class="chat-messages" ref="chatMessages">
-      <div
-          v-for="(msg, index) in messages"
-          :key="index"
-          :class="['chat-message', msg.sender === username ? 'from-user' : 'from-other']"
-      >
-        <div class="message-bubble">
-          <span class="sender">{{ msg.sender }}</span>
-          <div class="text">{{ msg.text }}</div>
+  <div class="chat-room">
+    <div class="chat-messages" ref="messagesContainer">
+      <div v-for="(message, index) in messages" :key="index" 
+           class="message" 
+           :class="{ 'ai-message': message.aiResponse, 'user-message': !message.aiResponse }">
+        <div class="message-content">
+          <div class="message-sender">{{ message.aiResponse ? 'AI' : '나' }}</div>
+          <div class="message-text">{{ formatMessage(message) }}</div>
         </div>
       </div>
     </div>
-
-    <form @submit.prevent="sendMessage" class="chat-form">
+    
+    <div class="chat-input">
       <input
-          v-model="newMessage"
-          type="text"
-          placeholder="메시지를 입력하세요"
-          required
+        v-model="newMessage"
+        @keyup.enter="sendMessage"
+        placeholder="메시지를 입력하세요..."
+        :disabled="!isConnected"
       />
-      <button type="submit">전송</button>
-    </form>
+      <button @click="sendMessage" :disabled="!isConnected">전송</button>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
+import axios from 'axios'
 
 const props = defineProps({
-  username: String,
-  roomId: String,
-  isGuest: Boolean
+  roomId: {
+    type: [String, null],
+    required: false,
+    default: null
+  },
+  isGuest: {
+    type: Boolean,
+    default: false
+  }
 })
 
-const socket = ref(null)
-const messages = ref([{ sender: '시스템', text: '채팅방에 입장했습니다.' }])
+const messages = ref([])
 const newMessage = ref('')
+const ws = ref(null)
+const isConnected = ref(false)
+const messagesContainer = ref(null)
 
-const connectWebSocket = () => {
-  if (!props.roomId) {
-    console.error('roomId가 없습니다:', props.roomId)
-    return
-  }
+// 채팅방 메시지 조회
+const fetchMessages = async () => {
+  if (!props.roomId || props.isGuest) return
 
-  console.log('웹소켓 연결 시도:', props.roomId, 'isGuest:', props.isGuest)
-  
-  const wsUrl = `ws://localhost:8080/ws/chat?roomId=${props.roomId}`
-  console.log('웹소켓 URL:', wsUrl)
-  
-  socket.value = new WebSocket(wsUrl)
-
-  socket.value.onopen = () => {
-    console.log('WebSocket 연결 성공')
-    if (!props.isGuest) {
-      console.log('회원 웹소켓 연결됨')
+  try {
+    const response = await axios.get(
+      `http://localhost:8080/chatrooms/${props.roomId}/messages`,
+      { withCredentials: true }
+    )
+    
+    if (response.data.success) {
+      messages.value = response.data.result.map(msg => ({
+        ...msg,
+        aiResponse: msg.sender === 'AI'
+      }))
+      scrollToBottom()
     }
-  }
-
-  socket.value.onmessage = (event) => {
-    console.log('메시지 수신:', event.data)
-    const data = JSON.parse(event.data)
-
-    // 게스트: 모든 메시지, 회원: AI 응답만 표시
-    if (props.isGuest || data.isAiResponse) {
-      messages.value.push({
-        sender: data.sender || '시스템',
-        text: data.message || data.text || ''
-      })
-    }
-
-    scrollToBottom()
-  }
-
-  socket.value.onclose = (event) => {
-    console.log('WebSocket 연결 종료:', event.code, event.reason)
-  }
-
-  socket.value.onerror = (error) => {
-    console.error('WebSocket 에러:', error)
+  } catch (error) {
+    console.error('메시지 조회 실패:', error)
   }
 }
 
-const sendMessage = () => {
-  if (!newMessage.value.trim() || !socket.value || socket.value.readyState !== WebSocket.OPEN) return
+const formatMessage = (message) => {
+  if (message.messageType === 'RECOMMENDATION' && Array.isArray(message.recommendations)) {
+    return message.recommendations.map((rec, idx) => `
+[추천 강의 ${idx + 1}] ${rec.title}
+${rec.description}
+강사: ${rec.instructor}
+난이도: ${rec.level}
+썸네일: ${rec.thumbnailUrl}
+    `).join('\n\n')
+  }
+  return message.message || message.text || message.content || ''
+}
 
-  const msg = newMessage.value.trim()
+const connectWebSocket = () => {
+  if (!props.roomId) {
+    console.log('roomId가 없어 WebSocket 연결을 시도하지 않습니다')
+    return
+  }
 
-  // 내가 보낸 메시지를 즉시 출력
-  messages.value.push({
-    sender: props.username,
-    text: msg
-  })
+  console.log('WebSocket 연결 시도:', props.roomId)
+  const token = localStorage.getItem('token')
+  const wsUrl = `ws://localhost:8080/ws/chat?roomId=${props.roomId}${token ? `&token=${token}` : ''}`
+  
+  ws.value = new WebSocket(wsUrl)
+  
+  ws.value.onopen = () => {
+    console.log('WebSocket 연결 성공')
+    isConnected.value = true
+    // WebSocket 연결 성공 시 이전 메시지 조회
+    fetchMessages()
+  }
+  
+  ws.value.onmessage = (event) => {
+    console.log('메시지 수신:', event.data)
+    try {
+      const data = JSON.parse(event.data)
+      console.log('파싱된 메시지 데이터:', data)
+      
+      // AI 응답인 경우에만 메시지 추가
+      if (data.aiResponse) {
+        messages.value.push(data)
+        scrollToBottom()
+      }
+    } catch (error) {
+      console.error('메시지 파싱 실패:', error)
+    }
+  }
+  
+  ws.value.onerror = (error) => {
+    console.error('WebSocket 에러:', error)
+    isConnected.value = false
+  }
+  
+  ws.value.onclose = () => {
+    console.log('WebSocket 연결 종료')
+    isConnected.value = false
+  }
+}
 
-  socket.value.send(msg)
-  newMessage.value = ''
-  scrollToBottom()
+const sendMessage = async () => {
+  if (!newMessage.value.trim() || !props.roomId) return
+  
+  try {
+    // REST API로 메시지 전송
+    const response = await axios.post(
+      `http://localhost:8080/chatrooms/${props.roomId}/messages`,
+      { message: newMessage.value.trim() },
+      { withCredentials: true }
+    )
+    
+    if (response.data.success) {
+      // 내가 보낸 메시지를 즉시 표시
+      messages.value.push({
+        ...response.data.result,
+        aiResponse: false
+      })
+      newMessage.value = ''
+      scrollToBottom()
+
+      // WebSocket을 통해 AI 응답 요청
+      if (ws.value && ws.value.readyState === WebSocket.OPEN) {
+        const aiRequest = {
+          type: 'AI_REQUEST',
+          content: response.data.result.message,
+          roomId: props.roomId
+        }
+        ws.value.send(JSON.stringify(aiRequest))
+      }
+    }
+  } catch (error) {
+    console.error('메시지 전송 실패:', error)
+    alert('메시지 전송에 실패했습니다')
+  }
 }
 
 const scrollToBottom = () => {
   setTimeout(() => {
-    const container = document.querySelector('.chat-messages')
-    if (container) container.scrollTop = container.scrollHeight
+    if (messagesContainer.value) {
+      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    }
   }, 100)
 }
 
-watch(() => props.roomId, (newVal, oldVal) => {
-  console.log('roomId 변경 감지:', { old: oldVal, new: newVal })
-  
-  if (socket.value && socket.value.readyState === WebSocket.OPEN) {
-    console.log('기존 웹소켓 연결 종료')
-    socket.value.close()
-  }
-  
-  if (newVal) {
-    console.log('새로운 웹소켓 연결 시도')
-    connectWebSocket()
+// roomId가 변경될 때마다 메시지 초기화 및 WebSocket 재연결
+watch(() => props.roomId, (newRoomId, oldRoomId) => {
+  console.log('채팅방 변경:', oldRoomId, '->', newRoomId)
+  if (newRoomId !== oldRoomId) {
+    messages.value = [] // 메시지 초기화
+    if (ws.value) {
+      ws.value.close()
+      ws.value = null
+    }
+    if (newRoomId) {
+      connectWebSocket()
+    }
   }
 }, { immediate: true })
 
-onMounted(() => {
-  console.log('ChatRoom 컴포넌트 마운트됨, roomId:', props.roomId)
-  if (props.roomId) {
-    connectWebSocket()
-  }
-})
-
-onBeforeUnmount(() => {
-  console.log('ChatRoom 컴포넌트 언마운트됨')
-  if (socket.value) {
-    socket.value.close()
+onUnmounted(() => {
+  if (ws.value) {
+    ws.value.close()
   }
 })
 </script>
 
 <style scoped>
-.chatroom {
-  max-width: 700px;
-  margin: 60px auto;
-  padding: 24px;
-  background-color: #2c2c2e;
+.chat-room {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: calc(100vh - 200px); /* 상단 여백과 하단 여백 고려 */
+  background-color: #1e1e1e;
   border-radius: 12px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-  font-family: 'Segoe UI', Tahoma, sans-serif;
-  color: #f2f2f2;
-}
-
-.chatroom h2 {
-  text-align: center;
-  margin-bottom: 16px;
-  color: #f2f2f2;
+  overflow: hidden;
 }
 
 .chat-messages {
-  height: 400px;
+  flex: 1;
   overflow-y: auto;
-  padding: 16px;
-  background-color: #1c1c1e;
-  border-radius: 8px;
-  margin-bottom: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+  min-height: 0; /* 스크롤이 제대로 작동하도록 설정 */
 }
 
-.chat-message {
+.message {
   display: flex;
+  flex-direction: column;
+  max-width: 80%;
+  margin: 4px 0;
 }
 
-.message-bubble {
-  max-width: 70%;
-  padding: 12px;
+/* AI 메시지는 왼쪽 정렬 */
+.ai-message {
+  align-self: flex-start;
+}
+
+/* 사용자 메시지는 오른쪽 정렬 */
+.user-message {
+  align-self: flex-end;
+}
+
+.message-content {
+  padding: 12px 16px;
   border-radius: 12px;
-  background-color: #3a3a3c;
-  position: relative;
-  color: #f2f2f2;
-}
-
-.from-user {
-  justify-content: flex-end;
-}
-
-.from-user .message-bubble {
-  background-color: #0a84ff;
   color: #fff;
-  border-top-right-radius: 0;
 }
 
-.from-other {
-  justify-content: flex-start;
+/* AI 메시지 스타일 */
+.ai-message .message-content {
+  background-color: #2a2a2a;
+  border-top-left-radius: 4px;
 }
 
-.from-other .message-bubble {
-  background-color: #3a3a3c;
-  color: #f2f2f2;
-  border-top-left-radius: 0;
+/* 사용자 메시지 스타일 */
+.user-message .message-content {
+  background-color: #0a84ff;
+  border-top-right-radius: 4px;
 }
 
-.sender {
-  font-weight: bold;
+.message-sender {
   font-size: 12px;
   margin-bottom: 4px;
-  display: block;
-  color: #b0b0b0;
 }
 
-.text {
-  font-size: 14px;
-  line-height: 1.4;
-  word-wrap: break-word;
+.ai-message .message-sender {
+  color: #0a84ff;
 }
 
-.chat-form {
-  display: flex;
-  gap: 8px;
-}
-
-.chat-form input {
-  flex: 1;
-  padding: 10px;
-  font-size: 14px;
-  border-radius: 8px;
-  border: 1px solid #555;
-  background-color: #2c2c2e;
+.user-message .message-sender {
   color: #fff;
+  text-align: right;
 }
 
-.chat-form button {
-  padding: 10px 16px;
+.message-text {
+  word-break: break-word;
+  white-space: pre-wrap;
+  line-height: 1.4;
+}
+
+.chat-input {
+  display: flex;
+  gap: 10px;
+  padding: 20px;
+  background-color: #2a2a2a;
+  border-top: 1px solid #333;
+  flex-shrink: 0; /* 입력 영역이 줄어들지 않도록 설정 */
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  background-color: #1e1e1e;
+  color: #fff;
+  font-size: 14px;
+}
+
+.chat-input input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #0a84ff;
+}
+
+.chat-input button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
   background-color: #0a84ff;
   color: white;
-  font-weight: bold;
-  border: none;
-  border-radius: 8px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s;
 }
 
-.chat-form button:hover {
+.chat-input button:hover {
   background-color: #0066cc;
+}
+
+.chat-input button:disabled {
+  background-color: #666;
+  cursor: not-allowed;
+}
+
+/* 스크롤바 스타일링 */
+.chat-messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 </style>

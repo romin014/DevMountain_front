@@ -1,17 +1,28 @@
 <script setup>
-import {ref, onMounted} from 'vue'
+import {ref, onMounted, computed} from 'vue'
 import axios from 'axios'
-import GuestChatroom from './GuestChatRoom.vue'
+import ChatRoomList from './ChatRoomList.vue'
 import ChatRoom from '@/views/ChatRoom.vue'
-import {computed} from 'vue'
 
 const username = ref(localStorage.getItem('username') || '익명')
 const isGuest = ref(true)
 const guestRoomId = ref(null)
 const roomId = ref(null)
+const ws = ref(null)
+
 const resolvedRoomId = computed(() => {
   return isGuest.value ? guestRoomId.value : roomId.value
 })
+
+const handleRoomSelect = (newRoomId) => {
+  console.log('새로운 채팅방 선택:', newRoomId)
+  roomId.value = newRoomId
+  // 채팅방이 변경될 때마다 WebSocket 연결을 새로 설정
+  if (ws.value) {
+    ws.value.close()
+    ws.value = null
+  }
+}
 
 onMounted(async () => {
   try {
@@ -25,34 +36,18 @@ onMounted(async () => {
     localStorage.setItem('username', res.data.name)
     isGuest.value = false
 
-    // ✅ 회원일 경우 채팅방 생성 API 호출
-    try {
-      const roomRes = await axios.post(
-          'http://localhost:8080/chatrooms',
-          {name: `${username.value}의 채팅방`},
-          {withCredentials: true}
-      )
-      console.log('채팅방 생성 응답:', roomRes.data)
-      
-      // 응답 구조 디버깅
-      console.log('응답 result 객체:', roomRes.data.result)
-      
-      if (roomRes.data.result && roomRes.data.result.chatroomId) {
-        roomId.value = roomRes.data.result.chatroomId
-        console.log('설정된 roomId:', roomId.value)
-      } else {
-        console.error('채팅방 ID를 찾을 수 없습니다:', roomRes.data)
-        throw new Error('채팅방 ID를 찾을 수 없습니다')
-      }
-    } catch (error) {
-      console.error('채팅방 생성 실패:', error)
-      isGuest.value = true
-      username.value = '익명'
-      localStorage.removeItem('username')
+    // 회원의 경우 첫 번째 채팅방을 자동으로 선택
+    const roomsResponse = await axios.get('http://localhost:8080/chatrooms', {
+      withCredentials: true
+    })
+    
+    if (roomsResponse.data.result && roomsResponse.data.result.length > 0) {
+      roomId.value = roomsResponse.data.result[0].chatroomId
+      console.log('첫 번째 채팅방 선택:', roomId.value)
     }
 
   } catch (e) {
-    // ✅ 게스트일 경우 랜덤 ID 생성 (휘발성)
+    console.log('비회원 모드로 전환:', e)
     isGuest.value = true
     username.value = '익명'
     localStorage.removeItem('username')
@@ -62,15 +57,15 @@ onMounted(async () => {
       guestRoomId.value = `${Date.now()}${Math.floor(Math.random() * 1000)}`
       localStorage.setItem('guestRoomId', guestRoomId.value)
     }
-    // guestRoomId.value = `${Date.now()}${Math.floor(Math.random() * 1000)}`
   }
 })
+
 const handleLogout = async () => {
   await axios.post('http://localhost:8080/logout', null, {
     withCredentials: true
   })
   localStorage.removeItem('username')
-  location.reload() // 새로고침으로 상태 초기화
+  location.reload()
 }
 </script>
 
@@ -97,26 +92,18 @@ const handleLogout = async () => {
     </header>
 
     <main class="main-content">
-<!--      <GuestChatroom-->
-<!--          v-if="isGuest"-->
-<!--          :roomId="resolvedRoomId"-->
-<!--          :username="username"-->
-<!--      />-->
-<!--      <ChatRoom-->
-<!--          v-else-->
-<!--          :roomId="resolvedRoomId"-->
-<!--          :username="username"-->
-<!--      />-->
-      <ChatRoom
-          :username="username"
-          :roomId="resolvedRoomId"
-          :isGuest="isGuest"
-      />
-
-
+      <div class="chat-container">
+        <ChatRoomList
+            v-if="!isGuest"
+            :onRoomSelect="handleRoomSelect"
+        />
+        <ChatRoom
+            :username="username"
+            :roomId="resolvedRoomId"
+            :isGuest="isGuest"
+        />
+      </div>
     </main>
-
-
   </div>
 </template>
 
@@ -167,8 +154,15 @@ const handleLogout = async () => {
 
 .main-content {
   padding: 60px 20px;
-  max-width: 720px;
-  text-align: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.chat-container {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
 }
 
 .subtext {
