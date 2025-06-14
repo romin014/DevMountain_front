@@ -1,6 +1,6 @@
 <template>
   <div class="chatroom">
-    <h2>{{ isGuest ? '비회원 채팅방' : '회원 채팅방' }}</h2>
+    <h2>회원 채팅방</h2>
 
     <div class="chat-messages" ref="chatMessages">
       <div
@@ -28,55 +28,44 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import {ref, onMounted, onBeforeUnmount, watch} from 'vue'
 
 const props = defineProps({
   username: String,
-  roomId: String,
-  isGuest: Boolean
+  roomId: String
 })
 
+const username = ref(props.username || '익명')
+const roomId = props.roomId
+
 const socket = ref(null)
-const messages = ref([{ sender: '시스템', text: '채팅방에 입장했습니다.' }])
+const messages = ref([{sender: '시스템', text: '채팅방에 입장했습니다.'}])
 const newMessage = ref('')
 
 const connectWebSocket = () => {
-  if (!props.roomId) {
-    console.error('roomId가 없습니다:', props.roomId)
-    return
-  }
-
-  console.log('웹소켓 연결 시도:', props.roomId, 'isGuest:', props.isGuest)
-  
-  const wsUrl = `ws://localhost:8080/ws/chat?roomId=${props.roomId}`
-  console.log('웹소켓 URL:', wsUrl)
-  
-  socket.value = new WebSocket(wsUrl)
+  socket.value = new WebSocket(`ws://localhost:8080/ws/chat?roomId=${roomId}`)
 
   socket.value.onopen = () => {
     console.log('WebSocket 연결 성공')
-    if (!props.isGuest) {
-      console.log('회원 웹소켓 연결됨')
-    }
   }
 
   socket.value.onmessage = (event) => {
-    console.log('메시지 수신:', event.data)
     const data = JSON.parse(event.data)
 
-    // 게스트: 모든 메시지, 회원: AI 응답만 표시
-    if (props.isGuest || data.isAiResponse) {
+    // AI 응답만 화면에 출력
+    if (data.isAiResponse) {
       messages.value.push({
-        sender: data.sender || '시스템',
-        text: data.message || data.text || ''
+        sender: '시스템',
+        text: data.message
       })
     }
 
     scrollToBottom()
   }
 
-  socket.value.onclose = (event) => {
-    console.log('WebSocket 연결 종료:', event.code, event.reason)
+
+  socket.value.onclose = () => {
+    console.log('WebSocket 연결 종료')
   }
 
   socket.value.onerror = (error) => {
@@ -89,9 +78,9 @@ const sendMessage = () => {
 
   const msg = newMessage.value.trim()
 
-  // 내가 보낸 메시지를 즉시 출력
+  // 내가 보낸 메시지를 즉시 화면에 추가
   messages.value.push({
-    sender: props.username,
+    sender: username.value,
     text: msg
   })
 
@@ -100,6 +89,7 @@ const sendMessage = () => {
   scrollToBottom()
 }
 
+
 const scrollToBottom = () => {
   setTimeout(() => {
     const container = document.querySelector('.chat-messages')
@@ -107,36 +97,25 @@ const scrollToBottom = () => {
   }, 100)
 }
 
-watch(() => props.roomId, (newVal, oldVal) => {
-  console.log('roomId 변경 감지:', { old: oldVal, new: newVal })
-  
-  if (socket.value && socket.value.readyState === WebSocket.OPEN) {
-    console.log('기존 웹소켓 연결 종료')
-    socket.value.close()
-  }
-  
-  if (newVal) {
-    console.log('새로운 웹소켓 연결 시도')
-    connectWebSocket()
-  }
-}, { immediate: true })
-
 onMounted(() => {
-  console.log('ChatRoom 컴포넌트 마운트됨, roomId:', props.roomId)
-  if (props.roomId) {
-    connectWebSocket()
-  }
+  connectWebSocket()
 })
 
 onBeforeUnmount(() => {
-  console.log('ChatRoom 컴포넌트 언마운트됨')
   if (socket.value) {
     socket.value.close()
   }
 })
 </script>
 
-<style scoped>
+<style>
+body {
+  background-color: #5ca7cb;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+
 .chatroom {
   max-width: 700px;
   margin: 60px auto;
@@ -146,6 +125,26 @@ onBeforeUnmount(() => {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
   font-family: 'Segoe UI', Tahoma, sans-serif;
   color: #f2f2f2;
+}
+
+.home-box {
+  margin-left: 500px;
+  margin-top: 40px;
+  margin-bottom: -30px;
+  background-color: #3a3a3c;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 20px;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s ease;
+}
+
+.home-box:hover {
+  background-color: #505053;
 }
 
 .chatroom h2 {
@@ -180,7 +179,7 @@ onBeforeUnmount(() => {
 }
 
 .from-user {
-  justify-content: flex-end;
+  justify-content: flex-end; /* 오른쪽 정렬 */
 }
 
 .from-user .message-bubble {
@@ -190,7 +189,7 @@ onBeforeUnmount(() => {
 }
 
 .from-other {
-  justify-content: flex-start;
+  justify-content: flex-start; /* 왼쪽 정렬 */
 }
 
 .from-other .message-bubble {

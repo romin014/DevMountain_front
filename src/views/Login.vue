@@ -62,7 +62,7 @@ const login = async () => {
 
     // 로그인 성공 시 사용자 이름을 localStorage에 저장
     // (백엔드 응답 구조에 따라 name 위치 조정 필요)
-    localStorage.setItem('name', res.data.name || '익명');
+    localStorage.setItem('username', res.data.name || '익명');
 
     // 로그인 후 홈 페이지 이동
     router.push('/home');

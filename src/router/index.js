@@ -4,6 +4,7 @@ import Login from '../views/Login.vue';
 import SignUp from '../views/SignUp.vue';
 import GetUser from '../views/GetUser.vue';
 import ChatRoom from "../views/ChatRoom.vue";
+import GuestChatRoom from "../views/GuestChatRoom.vue";
 
 const routes = [
     {
@@ -35,6 +36,16 @@ const routes = [
         path: '/chatrooms',
         name: 'chatroom',
         component: ChatRoom
+    },
+    {
+        path: '/guestChatrooms/:roomId',
+        name: 'guestChatroomRoomId',
+        component: GuestChatRoom
+    },
+    {
+        path: '/guestChatrooms/:roomId',
+        name: 'guestChatroom',
+        component: GuestChatRoom
     },
     // 404 Not Found 라우트 (가장 마지막에 위치)
     {
