@@ -23,12 +23,23 @@ Pro 멤버십 업그레이드 시:
     <div class="chat-messages" ref="messagesContainer">
       <div v-for="(message, index) in messages" :key="index"
            class="message"
-           :class="{ 'ai-message': message.aiResponse, 'user-message': !message.aiResponse }">
+           :class="{
+             'ai-message': message.messageType === 'CHAT' || isChatLikeRecommendation(message),
+             'user-message': !message.messageType,
+             'recommendation-message': message.messageType === 'RECOMMENDATION' && !isChatLikeRecommendation(message)
+           }">
         <div class="message-content">
           <div class="message-header">
-            <div class="message-sender">{{ message.aiResponse ? 'AI' : '나' }}</div>
+            <div class="message-sender">{{ getMessageSender(message) }}</div>
           </div>
-          <div class="message-text">{{ formatMessage(message) }}</div>
+          <div v-if="message.messageType === 'RECOMMENDATION' && !isChatLikeRecommendation(message)" class="recommendation-cards">
+            <div v-for="(course, idx) in parseRecommendation(message)" :key="idx" class="course-card">
+              <h3>{{ course.title }}</h3>
+              <p>{{ course.description }}</p>
+              <a :href="course.link" target="_blank" class="course-link">강의 보기</a>
+            </div>
+          </div>
+          <div v-else class="message-text">{{ formatMessage(message) }}</div>
         </div>
       </div>
     </div>
@@ -176,6 +187,30 @@ const scrollToBottom = () => {
     }
   }, 100)
 }
+
+const isChatLikeRecommendation = (message) => {
+  if (message.messageType !== 'RECOMMENDATION') return false;
+  
+  const content = typeof message.content === 'string' ? message.content : JSON.stringify(message.content);
+  return content.includes('아쉽지만, 현재 조건에 맞는 강의를 찾지 못했어요');
+};
+
+const getMessageSender = (message) => {
+  if (!message.messageType) return '나';
+  if (message.messageType === 'CHAT' || isChatLikeRecommendation(message)) return 'AI';
+  if (message.messageType === 'RECOMMENDATION') return 'AI 추천';
+  return 'AI';
+};
+
+const parseRecommendation = (message) => {
+  try {
+    const content = typeof message.content === 'string' ? JSON.parse(message.content) : message.content;
+    return Array.isArray(content) ? content : [content];
+  } catch (e) {
+    console.error('Failed to parse recommendation:', e);
+    return [];
+  }
+};
 
 watch(() => props.roomId, (newRoomId, oldRoomId) => {
   if (newRoomId !== oldRoomId) {
@@ -375,5 +410,63 @@ onUnmounted(() => {
   min-width: 600px;
   text-align: left;
   line-height: 1.8;
+}
+
+.recommendation-message {
+  background-color: #2a2a2a;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 10px 0;
+  max-width: 90%;
+}
+
+.recommendation-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 10px;
+}
+
+.course-card {
+  background-color: #333;
+  border-radius: 8px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.course-card h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 1.1em;
+}
+
+.course-card p {
+  margin: 0;
+  color: #ccc;
+  font-size: 0.9em;
+  flex-grow: 1;
+}
+
+.course-link {
+  display: inline-block;
+  background-color: #4CAF50;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  text-decoration: none;
+  text-align: center;
+  transition: background-color 0.2s;
+}
+
+.course-link:hover {
+  background-color: #45a049;
+}
+
+@media (max-width: 768px) {
+  .recommendation-cards {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
