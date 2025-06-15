@@ -1,8 +1,8 @@
 <template>
   <div class="chat-room">
     <div class="chat-messages" ref="messagesContainer">
-      <div v-for="(message, index) in messages" :key="index" 
-           class="message" 
+      <div v-for="(message, index) in messages" :key="index"
+           class="message"
            :class="{ 'ai-message': message.aiResponse, 'user-message': !message.aiResponse }">
         <div class="message-content">
           <div class="message-sender">{{ message.aiResponse ? 'AI' : '나' }}</div>
@@ -10,13 +10,13 @@
         </div>
       </div>
     </div>
-    
+
     <div class="chat-input">
       <input
-        v-model="newMessage"
-        @keyup.enter="sendMessage"
-        placeholder="메시지를 입력하세요..."
-        :disabled="!isConnected"
+          v-model="newMessage"
+          @keyup.enter="sendMessage"
+          placeholder="메시지를 입력하세요..."
+          :disabled="!isConnected"
       />
       <button @click="sendMessage" :disabled="!isConnected">전송</button>
     </div>
@@ -45,16 +45,15 @@ const ws = ref(null)
 const isConnected = ref(false)
 const messagesContainer = ref(null)
 
-// 채팅방 메시지 조회
 const fetchMessages = async () => {
   if (!props.roomId || props.isGuest) return
 
   try {
     const response = await axios.get(
-      `http://localhost:8080/chatrooms/${props.roomId}/messages`,
-      { withCredentials: true }
+        `http://localhost:8080/chatrooms/${props.roomId}/messages`,
+        { withCredentials: true }
     )
-    
+
     if (response.data.success) {
       messages.value = response.data.result.map(msg => ({
         ...msg,
@@ -89,23 +88,18 @@ const connectWebSocket = () => {
   console.log('WebSocket 연결 시도:', props.roomId)
   const token = localStorage.getItem('token')
   const wsUrl = `ws://localhost:8080/ws/chat?roomId=${props.roomId}${token ? `&token=${token}` : ''}`
-  
+
   ws.value = new WebSocket(wsUrl)
-  
+
   ws.value.onopen = () => {
     console.log('WebSocket 연결 성공')
     isConnected.value = true
-    // WebSocket 연결 성공 시 이전 메시지 조회
     fetchMessages()
   }
-  
+
   ws.value.onmessage = (event) => {
-    console.log('메시지 수신:', event.data)
     try {
       const data = JSON.parse(event.data)
-      console.log('파싱된 메시지 데이터:', data)
-      
-      // AI 응답인 경우에만 메시지 추가
       if (data.aiResponse) {
         messages.value.push(data)
         scrollToBottom()
@@ -114,31 +108,22 @@ const connectWebSocket = () => {
       console.error('메시지 파싱 실패:', error)
     }
   }
-  
-  ws.value.onerror = (error) => {
-    console.error('WebSocket 에러:', error)
-    isConnected.value = false
-  }
-  
-  ws.value.onclose = () => {
-    console.log('WebSocket 연결 종료')
-    isConnected.value = false
-  }
+
+  ws.value.onerror = () => isConnected.value = false
+  ws.value.onclose = () => isConnected.value = false
 }
 
 const sendMessage = async () => {
   if (!newMessage.value.trim() || !props.roomId) return
-  
+
   try {
-    // REST API로 메시지 전송
     const response = await axios.post(
-      `http://localhost:8080/chatrooms/${props.roomId}/messages`,
-      { message: newMessage.value.trim() },
-      { withCredentials: true }
+        `http://localhost:8080/chatrooms/${props.roomId}/messages`,
+        { message: newMessage.value.trim() },
+        { withCredentials: true }
     )
-    
+
     if (response.data.success) {
-      // 내가 보낸 메시지를 즉시 표시
       messages.value.push({
         ...response.data.result,
         aiResponse: false
@@ -146,7 +131,6 @@ const sendMessage = async () => {
       newMessage.value = ''
       scrollToBottom()
 
-      // WebSocket을 통해 AI 응답 요청
       if (ws.value && ws.value.readyState === WebSocket.OPEN) {
         const aiRequest = {
           type: 'AI_REQUEST',
@@ -170,25 +154,16 @@ const scrollToBottom = () => {
   }, 100)
 }
 
-// roomId가 변경될 때마다 메시지 초기화 및 WebSocket 재연결
 watch(() => props.roomId, (newRoomId, oldRoomId) => {
-  console.log('채팅방 변경:', oldRoomId, '->', newRoomId)
   if (newRoomId !== oldRoomId) {
-    messages.value = [] // 메시지 초기화
-    if (ws.value) {
-      ws.value.close()
-      ws.value = null
-    }
-    if (newRoomId) {
-      connectWebSocket()
-    }
+    messages.value = []
+    if (ws.value) ws.value.close()
+    if (newRoomId) connectWebSocket()
   }
 }, { immediate: true })
 
 onUnmounted(() => {
-  if (ws.value) {
-    ws.value.close()
-  }
+  if (ws.value) ws.value.close()
 })
 </script>
 
@@ -196,8 +171,8 @@ onUnmounted(() => {
 .chat-room {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  max-height: calc(100vh - 200px); /* 상단 여백과 하단 여백 고려 */
+  height: 67vh;
+  min-height: 500px;
   background-color: #1e1e1e;
   border-radius: 12px;
   overflow: hidden;
@@ -210,7 +185,6 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  min-height: 0; /* 스크롤이 제대로 작동하도록 설정 */
 }
 
 .message {
@@ -220,12 +194,10 @@ onUnmounted(() => {
   margin: 4px 0;
 }
 
-/* AI 메시지는 왼쪽 정렬 */
 .ai-message {
   align-self: flex-start;
 }
 
-/* 사용자 메시지는 오른쪽 정렬 */
 .user-message {
   align-self: flex-end;
 }
@@ -236,13 +208,11 @@ onUnmounted(() => {
   color: #fff;
 }
 
-/* AI 메시지 스타일 */
 .ai-message .message-content {
   background-color: #2a2a2a;
   border-top-left-radius: 4px;
 }
 
-/* 사용자 메시지 스타일 */
 .user-message .message-content {
   background-color: #0a84ff;
   border-top-right-radius: 4px;
@@ -274,7 +244,7 @@ onUnmounted(() => {
   padding: 20px;
   background-color: #2a2a2a;
   border-top: 1px solid #333;
-  flex-shrink: 0; /* 입력 영역이 줄어들지 않도록 설정 */
+  flex-shrink: 0;
 }
 
 .chat-input input {
@@ -312,7 +282,6 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
-/* 스크롤바 스타일링 */
 .chat-messages::-webkit-scrollbar {
   width: 8px;
 }

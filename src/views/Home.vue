@@ -1,8 +1,9 @@
 <script setup>
-import {ref, onMounted, computed} from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import ChatRoomList from './ChatRoomList.vue'
 import ChatRoom from '@/views/ChatRoom.vue'
+import GuestChatRoom from '@/views/GuestChatRoom.vue'
 
 const username = ref(localStorage.getItem('username') || '익명')
 const isGuest = ref(true)
@@ -17,7 +18,6 @@ const resolvedRoomId = computed(() => {
 const handleRoomSelect = (newRoomId) => {
   console.log('새로운 채팅방 선택:', newRoomId)
   roomId.value = newRoomId
-  // 채팅방이 변경될 때마다 WebSocket 연결을 새로 설정
   if (ws.value) {
     ws.value.close()
     ws.value = null
@@ -36,11 +36,10 @@ onMounted(async () => {
     localStorage.setItem('username', res.data.name)
     isGuest.value = false
 
-    // 회원의 경우 첫 번째 채팅방을 자동으로 선택
     const roomsResponse = await axios.get('http://localhost:8080/chatrooms', {
       withCredentials: true
     })
-    
+
     if (roomsResponse.data.result && roomsResponse.data.result.length > 0) {
       roomId.value = roomsResponse.data.result[0].chatroomId
       console.log('첫 번째 채팅방 선택:', roomId.value)
@@ -69,7 +68,6 @@ const handleLogout = async () => {
 }
 </script>
 
-
 <template>
   <div class="wrapper">
     <header class="header">
@@ -80,24 +78,23 @@ const handleLogout = async () => {
       <nav class="nav">
         <RouterLink to="/" class="nav-link">홈</RouterLink>
         <RouterLink v-if="isGuest" to="/users/login" class="nav-link">로그인</RouterLink>
+        <RouterLink v-if="isGuest" to="/users/signup" class="nav-link">회원가입</RouterLink>
+        <RouterLink v-if="!isGuest" to="/users/me" class="nav-link">내 정보</RouterLink>
         <button
-            v-else
+            v-if="!isGuest"
             class="nav-link"
             @click="handleLogout"
-        >로그아웃
-        </button>
-        <RouterLink to="/users/signup" class="nav-link">회원가입</RouterLink>
-        <RouterLink to="/users/me" class="nav-link">내 정보</RouterLink>
+        >로그아웃</button>
       </nav>
     </header>
 
     <main class="main-content">
       <div class="chat-container">
-        <ChatRoomList
-            v-if="!isGuest"
-            :onRoomSelect="handleRoomSelect"
-        />
-        <ChatRoom
+        <ChatRoomList v-if="!isGuest" :onRoomSelect="handleRoomSelect" />
+
+        <!-- 회원/비회원에 따라 컴포넌트 동적으로 선택 -->
+        <component
+            :is="isGuest ? GuestChatRoom : ChatRoom"
             :username="username"
             :roomId="resolvedRoomId"
             :isGuest="isGuest"
@@ -163,6 +160,8 @@ const handleLogout = async () => {
   display: flex;
   gap: 20px;
   justify-content: center;
+  align-items: stretch;
+  height: calc(100vh - 200px); /* 전체 화면 채우기 */
 }
 
 .subtext {

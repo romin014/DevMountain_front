@@ -6,10 +6,10 @@
         새 채팅방 만들기
       </button>
     </div>
-    
+
     <div class="room-list">
-      <div v-for="room in chatRooms" :key="room.chatroomId" 
-           class="room-item" 
+      <div v-for="room in chatRooms" :key="room.chatroomId"
+           class="room-item"
            :class="{ active: selectedRoomId === room.chatroomId }"
            @click="selectRoom(room)">
         <div class="room-info">
@@ -25,15 +25,14 @@
       </div>
     </div>
 
-    <!-- 새 채팅방 생성 모달 -->
     <div v-if="showCreateRoomModal" class="modal-overlay">
       <div class="modal-content">
         <h3>새 채팅방 만들기</h3>
         <input
-          v-model="newRoomName"
-          type="text"
-          placeholder="채팅방 이름을 입력하세요"
-          class="room-name-input"
+            v-model="newRoomName"
+            type="text"
+            placeholder="채팅방 이름을 입력하세요"
+            class="room-name-input"
         />
         <div class="modal-buttons">
           <button @click="createRoom" class="create-btn">생성</button>
@@ -42,7 +41,6 @@
       </div>
     </div>
 
-    <!-- 삭제 확인 모달 -->
     <div v-if="showDeleteModal" class="modal-overlay">
       <div class="modal-content">
         <h3>채팅방 삭제</h3>
@@ -105,21 +103,20 @@ const createRoom = async () => {
 
   try {
     const response = await axios.post(
-      'http://localhost:8080/chatrooms',
-      { 
-        chatroomName: newRoomName.value.trim()  // chatroomName으로 변경
-      },
-      { withCredentials: true }
+        'http://localhost:8080/chatrooms',
+        {
+          chatroomName: newRoomName.value.trim()
+        },
+        { withCredentials: true }
     )
-    
+
     console.log('채팅방 생성 응답:', response.data)
-    
+
     if (response.data.success) {
-      await fetchChatRooms() // 채팅방 목록 새로고침
+      await fetchChatRooms()
       showCreateRoomModal.value = false
       newRoomName.value = ''
-      
-      // 새로 생성된 채팅방 선택
+
       if (response.data.result && response.data.result.chatroomId) {
         selectRoom(response.data.result)
       }
@@ -142,16 +139,15 @@ const deleteRoom = async () => {
 
   try {
     const response = await axios.delete(
-      `http://localhost:8080/chatrooms/${roomToDelete.value.chatroomId}`,
-      { withCredentials: true }
+        `http://localhost:8080/chatrooms/${roomToDelete.value.chatroomId}`,
+        { withCredentials: true }
     )
 
     if (response.data.success) {
-      await fetchChatRooms() // 채팅방 목록 새로고침
+      await fetchChatRooms()
       showDeleteModal.value = false
       roomToDelete.value = null
 
-      // 삭제된 채팅방이 현재 선택된 채팅방이었다면 선택 해제
       if (selectedRoomId.value === roomToDelete.value.chatroomId) {
         selectedRoomId.value = null
         props.onRoomSelect(null)
@@ -176,6 +172,10 @@ onMounted(() => {
   padding: 20px;
   margin-right: 20px;
   position: relative;
+  height: 63vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .list-header {
@@ -201,11 +201,11 @@ onMounted(() => {
 }
 
 .room-list {
+  flex: 1;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 600px;
-  overflow-y: auto;
 }
 
 .room-item {
@@ -261,7 +261,6 @@ onMounted(() => {
   background-color: rgba(255, 68, 68, 0.1);
 }
 
-/* 모달 스타일 */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -344,4 +343,4 @@ onMounted(() => {
   font-weight: bold;
   margin: 10px 0;
 }
-</style> 
+</style>
