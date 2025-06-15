@@ -47,6 +47,21 @@ const routes = [
         name: 'guestChatroom',
         component: GuestChatRoom
     },
+    {
+        path: '/payment',
+        name: 'Payment',
+        component: () => import('@/views/Payment.vue')
+    },
+    {
+        path: '/success',
+        name: 'Success',
+        component: () => import('@/views/Success.vue')
+    },
+    {
+        path: '/fail',
+        name: 'Fail',
+        component: () => import('@/views/Fail.vue')
+    },
     // 404 Not Found 라우트 (가장 마지막에 위치)
     {
         path: '/:catchAll(.*)', // 정의되지 않은 모든 경로

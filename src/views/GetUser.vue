@@ -3,7 +3,6 @@
 
     <button class="home-box" @click="goHome">Home</button>
 
-
     <div class="profile-container">
       <h2 class="profile-title">내 프로필</h2>
 
@@ -26,7 +25,11 @@
               <p><strong>카테고리:</strong> {{ (user.categories ?? []).map(c => c.name).join(', ') }}</p>
             </div>
           </div>
+
+          <!-- 구독 버튼 -->
+          <button class="subscribe-btn" @click="goToPayment">유료 구독하기</button>
         </template>
+
         <template v-else>
           <div class="no-user">유저 정보를 불러올 수 없습니다.</div>
         </template>
@@ -47,6 +50,10 @@ const errorMessage = ref('')
 
 const goHome = () => {
   router.push('/home')
+}
+
+const goToPayment = () => {
+  router.push('/payment')
 }
 
 onMounted(async () => {
@@ -71,7 +78,6 @@ onMounted(async () => {
   box-sizing: border-box;
   position: relative;
 }
-
 
 .home-box {
   margin-left: 400px;
@@ -156,5 +162,24 @@ onMounted(async () => {
 
 .info strong {
   color: #bbb;
+}
+
+.subscribe-btn {
+  display: block;
+  margin: 24px auto 0 auto;
+  background-color: #00bcd4;
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 188, 212, 0.3);
+  transition: background-color 0.2s ease;
+}
+
+.subscribe-btn:hover {
+  background-color: #0097a7;
 }
 </style>
