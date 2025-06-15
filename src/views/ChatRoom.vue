@@ -57,7 +57,7 @@ Pro 멤버십 업그레이드 시:
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 import axios from 'axios'
 import freeMembershipIcon from '@/assets/free.png'
 
@@ -89,10 +89,25 @@ const fetchMessages = async () => {
     )
 
     if (response.data.success) {
-      messages.value = response.data.result.map(msg => ({
-        ...msg,
-        aiResponse: msg.sender === 'AI'
-      }))
+      console.log('불러온 메시지:', response.data.result)
+      messages.value = response.data.result
+        .filter(msg => {
+          if (msg.userId && typeof msg.message === 'string') {
+            try {
+              const parsed = JSON.parse(msg.message)
+              if (parsed && parsed.type === 'AI_REQUEST') {
+                return false
+              }
+            } catch (e) {
+              // 평문은 표시
+            }
+          }
+          return true
+        })
+        .map(msg => ({
+          ...msg,
+          aiResponse: msg.sender === 'AI'
+        }))
       scrollToBottom()
     }
   } catch (error) {
@@ -110,6 +125,16 @@ ${rec.description}
 썸네일: ${rec.thumbnailUrl}
     `).join('\n\n')
   }
+
+  if (message.userId && typeof message.message === 'string') {
+    try {
+      const parsed = JSON.parse(message.message)
+      if (parsed && parsed.content) return parsed.content
+    } catch (e) {
+      return message.message
+    }
+  }
+
   return message.message || message.text || message.content || ''
 }
 
