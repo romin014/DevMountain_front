@@ -3,6 +3,7 @@
     <div class="chat-header">
       <h2>회원 채팅방</h2>
       <!-- 멤버십 아이콘 -->
+<!--      <a href="https://www.flaticon.com/kr/free-icons/-" title="비어 있는 아이콘">비어 있는 아이콘 제작자: Pixel perfect - Flaticon</a>-->
       <div class="membership-status">
         <img 
           :src="freeMembershipIcon" 

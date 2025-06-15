@@ -3,6 +3,7 @@
     <div class="chat-header">
       <h2>비회원 채팅방</h2>
       <!-- 멤버십 아이콘 -->
+<!--      <a href="https://www.flaticon.com/kr/free-icons/" title=" 아이콘"> 아이콘 제작자: Freepik - Flaticon</a>-->
       <div class="membership-status">
         <img 
           :src="guestMembershipIcon" 
