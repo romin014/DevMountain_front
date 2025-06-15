@@ -1,6 +1,24 @@
 <template>
   <div class="chatroom">
-    <h2>비회원 채팅방</h2>
+    <div class="chat-header">
+      <h2>비회원 채팅방</h2>
+      <!-- 멤버십 아이콘 -->
+      <div class="membership-status">
+        <img 
+          :src="guestMembershipIcon" 
+          alt="비회원" 
+          class="membership-icon"
+          title="비회원 혜택:
+• 기본 채팅 이용 (채팅 횟수 5회 제한)
+• 기본 AI 응답 제공
+
+멤버십 업그레이드 시:
+• 무제한 채팅 이용
+• AI 강의 추천
+• 기본 학습 경로 제공"
+        />
+      </div>
+    </div>
 
     <div class="chat-messages" ref="chatMessages">
       <div
@@ -9,7 +27,9 @@
           :class="['chat-message', msg.sender === guestUsername ? 'from-user' : 'from-other']"
       >
         <div class="message-bubble">
-          <span class="sender">{{ msg.sender }}</span>
+          <div class="message-header">
+            <span class="sender">{{ msg.sender }}</span>
+          </div>
           <div class="text" style="white-space: pre-wrap;">{{ msg.text }}</div>
         </div>
       </div>
@@ -30,6 +50,7 @@
 <script setup>
 import {ref, onMounted, onBeforeUnmount, watch} from 'vue'
 import axios from 'axios'
+import guestMembershipIcon from '@/assets/guest.png'  // 이미지 import
 
 const props = defineProps({
   roomId: String,
@@ -289,5 +310,73 @@ body {
 
 .chat-form button:hover {
   background-color: #0066cc;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.membership-icon {
+  width: 48px;
+  height: 48px;
+  cursor: help;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.membership-icon:hover {
+  opacity: 1;
+}
+
+/* 툴팁 스타일 */
+[title] {
+  position: relative;
+}
+
+[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 30px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 12px;
+  font-size: 36px;
+  white-space: pre-line;
+  z-index: 1000;
+  min-width: 600px;
+  text-align: left;
+  line-height: 1.8;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #444;
+}
+
+.membership-status {
+  display: flex;
+  align-items: center;
+}
+
+.membership-icon {
+  width: 48px;
+  height: 48px;
+  cursor: help;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.membership-icon:hover {
+  opacity: 1;
 }
 </style>

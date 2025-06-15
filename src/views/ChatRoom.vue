@@ -1,11 +1,32 @@
 <template>
   <div class="chat-room">
+    <div class="chat-header">
+      <h2>회원 채팅방</h2>
+      <!-- 멤버십 아이콘 -->
+      <div class="membership-status">
+        <img 
+          :src="freeMembershipIcon" 
+          alt="Free 멤버십" 
+          class="membership-icon"
+          title="Free 멤버십 혜택:
+• 무제한 채팅 이용
+• AI 강의 추천
+• 기본 학습 경로 제공
+
+Pro 멤버십 업그레이드 시:
+• 추후 추가 예정"
+        />
+      </div>
+    </div>
+
     <div class="chat-messages" ref="messagesContainer">
       <div v-for="(message, index) in messages" :key="index"
            class="message"
            :class="{ 'ai-message': message.aiResponse, 'user-message': !message.aiResponse }">
         <div class="message-content">
-          <div class="message-sender">{{ message.aiResponse ? 'AI' : '나' }}</div>
+          <div class="message-header">
+            <div class="message-sender">{{ message.aiResponse ? 'AI' : '나' }}</div>
+          </div>
           <div class="message-text">{{ formatMessage(message) }}</div>
         </div>
       </div>
@@ -26,6 +47,7 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
+import freeMembershipIcon from '@/assets/free.png'
 
 const props = defineProps({
   roomId: {
@@ -178,6 +200,20 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #444;
+}
+
+.membership-status {
+  display: flex;
+  align-items: center;
+}
+
 .chat-messages {
   flex: 1;
   overflow-y: auto;
@@ -218,9 +254,15 @@ onUnmounted(() => {
   border-top-right-radius: 4px;
 }
 
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
 .message-sender {
   font-size: 12px;
-  margin-bottom: 4px;
 }
 
 .ai-message .message-sender {
@@ -297,5 +339,40 @@ onUnmounted(() => {
 
 .chat-messages::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+.membership-icon {
+  width: 48px;
+  height: 48px;
+  cursor: help;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.membership-icon:hover {
+  opacity: 1;
+}
+
+/* 툴팁 스타일 */
+[title] {
+  position: relative;
+}
+
+[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 30px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 12px;
+  font-size: 36px;
+  white-space: pre-line;
+  z-index: 1000;
+  min-width: 600px;
+  text-align: left;
+  line-height: 1.8;
 }
 </style>
