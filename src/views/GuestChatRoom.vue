@@ -6,11 +6,11 @@
       <div
           v-for="(msg, index) in messages"
           :key="index"
-          :class="['chat-message', msg.sender === username ? 'from-user' : 'from-other']"
+          :class="['chat-message', msg.sender === guestUsername ? 'from-user' : 'from-other']"
       >
         <div class="message-bubble">
           <span class="sender">{{ msg.sender }}</span>
-          <div class="text">{{ msg.text }}</div>
+          <div class="text" style="white-space: pre-wrap;">{{ msg.text }}</div>
         </div>
       </div>
     </div>
@@ -29,6 +29,7 @@
 
 <script setup>
 import {ref, onMounted, onBeforeUnmount, watch} from 'vue'
+import axios from 'axios'
 
 const props = defineProps({
   roomId: String,
@@ -38,6 +39,7 @@ const props = defineProps({
 const socket = ref(null)
 const messages = ref([{sender: '시스템', text: '채팅방에 입장했습니다.'}])
 const newMessage = ref('')
+const guestUsername = '익명'  // 비회원 사용자 이름을 고정
 
 const connectWebSocket = () => {
   if (!props.roomId) return
@@ -47,11 +49,59 @@ const connectWebSocket = () => {
   socket.value.onopen = () => console.log('WebSocket 연결 성공')
 
   socket.value.onmessage = (event) => {
-    const data = JSON.parse(event.data)
-    if (data.isAiResponse) {
-      messages.value.push({sender: '시스템', text: data.message})
+    try {
+      const data = JSON.parse(event.data)
+      console.log('Received message:', data)
+
+      // message 필드가 JSON 문자열인 경우 파싱
+      let messageContent
+      try {
+        messageContent = JSON.parse(data.message)
+      } catch {
+        messageContent = null
+      }
+
+      // 사용자가 보낸 메시지의 JSON 응답은 무시
+      if (messageContent && 
+          messageContent.messageType === 'CHAT' && 
+          !messageContent.isAiResponse && 
+          messageContent.sender === guestUsername) {
+        return
+      }
+
+      // 메시지 타입에 따라 다르게 처리
+      switch (data.messageType) {
+        case 'WELCOME':
+        case 'CHAT':
+        case 'ERROR':
+          messages.value.push({
+            sender: '시스템',
+            text: data.message
+          })
+          break
+        case 'RECOMMENDATION':
+          if (data.recommendations && data.recommendations.length > 0) {
+            // 추천 강의 목록을 포맷팅하여 표시
+            const formattedMessage = data.recommendations.map((rec, index) => 
+              `[추천 강의 ${index + 1}]\n${rec.title}\n${rec.description}`
+            ).join('\n\n')
+            messages.value.push({
+              sender: '시스템',
+              text: formattedMessage
+            })
+          }
+          break
+        default:
+          // 기타 메시지 타입은 그대로 표시
+          messages.value.push({
+            sender: '시스템',
+            text: data.message || JSON.stringify(data)
+          })
+      }
+      scrollToBottom()
+    } catch (error) {
+      console.error('메시지 파싱 실패:', error)
     }
-    scrollToBottom()
   }
 
   socket.value.onclose = () => console.log('WebSocket 연결 종료')
@@ -60,9 +110,28 @@ const connectWebSocket = () => {
 
 const sendMessage = () => {
   if (!newMessage.value.trim() || !socket.value || socket.value.readyState !== WebSocket.OPEN) return
+
   const msg = newMessage.value.trim()
-  messages.value.push({sender: props.username, text: msg})
-  socket.value.send(msg)
+
+  // 내가 보낸 메시지를 즉시 화면에 추가
+  messages.value.push({
+    sender: guestUsername,
+    text: msg
+  })
+
+  // Send message in the format expected by ChatService
+  const aiRequest = {
+    type: 'CHAT',
+    message: msg,
+    roomId: props.roomId,
+    sender: guestUsername,
+    isAiResponse: false,
+    messageType: 'CHAT',
+    userId: null,  // 비회원이므로 userId는 null
+    chatRoomId: props.roomId
+  }
+  socket.value.send(JSON.stringify(aiRequest))
+  
   newMessage.value = ''
   scrollToBottom()
 }
