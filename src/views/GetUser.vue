@@ -23,11 +23,21 @@
               <p><strong>이름:</strong> {{ user.name }}</p>
               <p><strong>전화번호:</strong> {{ user.phoneNumber }}</p>
               <p><strong>카테고리:</strong> {{ (user.categories ?? []).map(c => c.name).join(', ') }}</p>
+              <p><strong>구독 상태:</strong> {{ user.membership === 'PRO' ? '유료회원' : '비회원' }}</p>
+              <p v-if="user.membership === 'PRO' && user.subscriptionExpiresAt">
+                <strong>구독 만료일:</strong> {{ formatDate(user.subscriptionExpiresAt) }}
+              </p>
             </div>
           </div>
 
-          <!-- 구독 버튼 -->
-          <button class="subscribe-btn" @click="goToPayment">유료 구독하기</button>
+          <!-- 유료회원이 아닌 경우만 버튼 표시 -->
+          <button
+            v-if="user.membership !== 'PRO'"
+            class="subscribe-btn"
+            @click="goToPayment"
+          >
+            유료 구독하기
+          </button>
         </template>
 
         <template v-else>
@@ -56,10 +66,14 @@ const goToPayment = () => {
   router.push('/payment')
 }
 
+const formatDate = (isoDate) => {
+  const date = new Date(isoDate)
+  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`
+}
+
 onMounted(async () => {
   try {
     const res = await axios.get('http://localhost:8080/users/me', { withCredentials: true })
-    console.log('백엔드 응답:', res.data)
     user.value = res.data
   } catch (err) {
     console.error('유저 정보 로딩 실패', err)
