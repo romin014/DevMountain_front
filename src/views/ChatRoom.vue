@@ -45,7 +45,7 @@ Pro 멤버십 업그레이드 시:
                   <span class="instructor">👨‍🏫 {{ course.instructor }}</span>
                   <span class="level">📚 {{ course.level }}</span>
                 </div>
-                <a :href="course.url" target="_blank" class="course-link">강의 보기 →</a>
+                <a :href="course.url" target="_blank" class="course-link" @click="console.log('Link clicked:', course.url)">강의 보기 →</a>
               </div>
             </div>
           </div>
@@ -155,8 +155,10 @@ const hasRecommendations = (message) => {
   
   try {
     const recommendations = parseRecommendation(message)
-    return recommendations && recommendations.length > 0 && recommendations[0].thumbnailUrl
+    console.log('Has recommendations check:', recommendations)
+    return recommendations && recommendations.length > 0 && recommendations[0].thumbnailUrl && recommendations[0].url
   } catch (e) {
+    console.error('Error in hasRecommendations:', e)
     return false
   }
 }
@@ -258,30 +260,38 @@ const getMessageSender = (message) => {
 
 const parseRecommendation = (message) => {
   try {
+    console.log('Parsing recommendation message:', message)
+    
     // message.content에서 recommendations 추출
     let content = message.content
     if (typeof content === 'string') {
       content = JSON.parse(content)
     }
     
+    console.log('Parsed content:', content)
+    
     // content가 직접 recommendations 배열인 경우
     if (Array.isArray(content)) {
+      console.log('Content is array:', content)
       return content
     }
     
     // content.recommendations가 있는 경우
     if (content && content.recommendations && Array.isArray(content.recommendations)) {
+      console.log('Found content.recommendations:', content.recommendations)
       return content.recommendations
     }
     
     // message.recommendations가 있는 경우 (기존 로직)
     if (message.recommendations && Array.isArray(message.recommendations)) {
+      console.log('Found message.recommendations:', message.recommendations)
       return message.recommendations
     }
     
+    console.log('No recommendations found, returning empty array')
     return []
   } catch (e) {
-    console.error('Failed to parse recommendation:', e);
+    console.error('Failed to parse recommendation:', e, 'Message:', message);
     return [];
   }
 };
@@ -516,6 +526,8 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   border: 1px solid #404040;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .course-card:hover {
@@ -543,6 +555,9 @@ onUnmounted(() => {
 
 .course-info {
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
 .course-title {
@@ -592,16 +607,20 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-  color: white;
-  padding: 12px 24px;
+  color: white !important;
+  padding: 12px 20px;
   border-radius: 25px;
   text-decoration: none;
   font-weight: 600;
   font-size: 0.95em;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
-  width: 100%;
   text-align: center;
+  cursor: pointer;
+  position: relative;
+  z-index: 10;
+  box-sizing: border-box;
+  align-self: stretch;
 }
 
 .course-link:hover {
@@ -640,6 +659,7 @@ onUnmounted(() => {
   
   .course-info {
     padding: 16px;
+    box-sizing: border-box;
   }
   
   .course-title {
