@@ -32,14 +32,14 @@ Pro 멤버십 업그레이드 시:
           <div class="message-header">
             <div class="message-sender">{{ getMessageSender(message) }}</div>
           </div>
-          <div v-if="message.messageType === 'RECOMMENDATION' && !isChatLikeRecommendation(message)" class="recommendation-cards">
+          <!--<div v-if="message.messageType === 'RECOMMENDATION' && !isChatLikeRecommendation(message)" class="recommendation-cards">
             <div v-for="(course, idx) in parseRecommendation(message)" :key="idx" class="course-card">
               <h3>{{ course.title }}</h3>
               <p>{{ course.description }}</p>
               <a :href="course.link" target="_blank" class="course-link">강의 보기</a>
             </div>
-          </div>
-          <div v-else class="message-text">{{ formatMessage(message) }}</div>
+          </div>-->
+          <div class="message-text">{{ formatMessage(message) }}</div>
         </div>
       </div>
     </div>
@@ -215,8 +215,14 @@ const scrollToBottom = () => {
 
 const isChatLikeRecommendation = (message) => {
   if (message.messageType !== 'RECOMMENDATION') return false;
-  
-  const content = typeof message.content === 'string' ? message.content : JSON.stringify(message.content);
+
+  // content가 undefined/null이어도 항상 문자열로 변환
+  const content = message && message.content != null
+    ? (typeof message.content === 'string'
+        ? message.content
+        : JSON.stringify(message.content))
+    : '';
+
   return content.includes('아쉽지만, 현재 조건에 맞는 강의를 찾지 못했어요');
 };
 
