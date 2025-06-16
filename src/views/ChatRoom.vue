@@ -45,7 +45,8 @@ Pro 멤버십 업그레이드 시:
                   <span class="instructor">👨‍🏫 {{ course.instructor }}</span>
                   <span class="level">📚 {{ course.level }}</span>
                 </div>
-                <a :href="course.url" target="_blank" class="course-link" @click="console.log('Link clicked:', course.url)">강의 보기 →</a>
+                <a v-if="course.url" :href="course.url" target="_blank" class="course-link" @click="console.log('Link clicked:', course.url)">강의 보기 →</a>
+                <div v-else class="course-no-link">링크 정보 없음</div>
               </div>
             </div>
           </div>
@@ -156,7 +157,7 @@ const hasRecommendations = (message) => {
   try {
     const recommendations = parseRecommendation(message)
     console.log('Has recommendations check:', recommendations)
-    return recommendations && recommendations.length > 0 && recommendations[0].thumbnailUrl && recommendations[0].url
+    return recommendations && recommendations.length > 0 && recommendations[0].thumbnailUrl
   } catch (e) {
     console.error('Error in hasRecommendations:', e)
     return false
@@ -631,6 +632,21 @@ onUnmounted(() => {
 
 .course-link:active {
   transform: translateY(0);
+}
+
+.course-no-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #666 0%, #555 100%);
+  color: #ccc;
+  padding: 12px 20px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 0.95em;
+  text-align: center;
+  box-sizing: border-box;
+  align-self: stretch;
 }
 
 @media (max-width: 768px) {
