@@ -32,14 +32,25 @@ Pro 멤버십 업그레이드 시:
           <div class="message-header">
             <div class="message-sender">{{ getMessageSender(message) }}</div>
           </div>
-          <!--<div v-if="message.messageType === 'RECOMMENDATION' && !isChatLikeRecommendation(message)" class="recommendation-cards">
+          <!-- 추천 강의인 경우 카드 형태로 표시 -->
+          <div v-if="message.messageType === 'RECOMMENDATION' && !isChatLikeRecommendation(message) && hasRecommendations(message)" class="recommendation-cards">
             <div v-for="(course, idx) in parseRecommendation(message)" :key="idx" class="course-card">
-              <h3>{{ course.title }}</h3>
-              <p>{{ course.description }}</p>
-              <a :href="course.link" target="_blank" class="course-link">강의 보기</a>
+              <div class="course-thumbnail">
+                <img :src="course.thumbnailUrl" :alt="course.title" class="thumbnail-image" />
+              </div>
+              <div class="course-info">
+                <h3 class="course-title">{{ course.title }}</h3>
+                <p class="course-description">{{ course.description }}</p>
+                <div class="course-meta">
+                  <span class="instructor">👨‍🏫 {{ course.instructor }}</span>
+                  <span class="level">📚 {{ course.level }}</span>
+                </div>
+                <a :href="course.url" target="_blank" class="course-link">강의 보기 →</a>
+              </div>
             </div>
-          </div>-->
-          <div class="message-text">{{ formatMessage(message) }}</div>
+          </div>
+          <!-- 일반 메시지 또는 텍스트 추천 메시지 -->
+          <div v-else class="message-text">{{ formatMessage(message) }}</div>
         </div>
       </div>
     </div>
@@ -136,6 +147,18 @@ ${rec.description}
   }
 
   return message.message || message.text || message.content || ''
+}
+
+// 추천 강의가 있는지 확인하는 함수 추가
+const hasRecommendations = (message) => {
+  if (message.messageType !== 'RECOMMENDATION') return false
+  
+  try {
+    const recommendations = parseRecommendation(message)
+    return recommendations && recommendations.length > 0 && recommendations[0].thumbnailUrl
+  } catch (e) {
+    return false
+  }
 }
 
 const connectWebSocket = () => {
@@ -235,8 +258,28 @@ const getMessageSender = (message) => {
 
 const parseRecommendation = (message) => {
   try {
-    const content = typeof message.content === 'string' ? JSON.parse(message.content) : message.content;
-    return Array.isArray(content) ? content : [content];
+    // message.content에서 recommendations 추출
+    let content = message.content
+    if (typeof content === 'string') {
+      content = JSON.parse(content)
+    }
+    
+    // content가 직접 recommendations 배열인 경우
+    if (Array.isArray(content)) {
+      return content
+    }
+    
+    // content.recommendations가 있는 경우
+    if (content && content.recommendations && Array.isArray(content.recommendations)) {
+      return content.recommendations
+    }
+    
+    // message.recommendations가 있는 경우 (기존 로직)
+    if (message.recommendations && Array.isArray(message.recommendations)) {
+      return message.recommendations
+    }
+    
+    return []
   } catch (e) {
     console.error('Failed to parse recommendation:', e);
     return [];
@@ -262,6 +305,9 @@ onUnmounted(() => {
   flex-direction: column;
   height: 67vh;
   min-height: 500px;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
   background-color: #1e1e1e;
   border-radius: 12px;
   overflow: hidden;
@@ -293,8 +339,9 @@ onUnmounted(() => {
 .message {
   display: flex;
   flex-direction: column;
-  max-width: 80%;
+  max-width: 75%;
   margin: 4px 0;
+  width: fit-content;
 }
 
 .ai-message {
@@ -303,6 +350,11 @@ onUnmounted(() => {
 
 .user-message {
   align-self: flex-end;
+}
+
+.recommendation-message {
+  max-width: 90%;
+  width: 90%;
 }
 
 .message-content {
@@ -319,6 +371,11 @@ onUnmounted(() => {
 .user-message .message-content {
   background-color: #0a84ff;
   border-top-right-radius: 4px;
+}
+
+.recommendation-message .message-content {
+  background-color: transparent;
+  padding: 0;
 }
 
 .message-header {
@@ -443,61 +500,160 @@ onUnmounted(() => {
   line-height: 1.8;
 }
 
-.recommendation-message {
-  background-color: #2a2a2a;
-  border-radius: 12px;
-  padding: 20px;
-  margin: 10px 0;
-  max-width: 90%;
-}
-
+/* 추천 강의 카드 스타일 */
 .recommendation-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
 }
 
 .course-card {
-  background-color: #333;
-  border-radius: 8px;
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  background: linear-gradient(135deg, #2a2a2a 0%, #333333 100%);
+  border-radius: 16px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid #404040;
 }
 
-.course-card h3 {
-  margin: 0;
+.course-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.course-thumbnail {
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+  position: relative;
+}
+
+.thumbnail-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.course-card:hover .thumbnail-image {
+  transform: scale(1.05);
+}
+
+.course-info {
+  padding: 20px;
+}
+
+.course-title {
+  margin: 0 0 12px 0;
   color: #fff;
-  font-size: 1.1em;
+  font-size: 1.2em;
+  font-weight: 600;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.course-card p {
-  margin: 0;
+.course-description {
+  margin: 0 0 16px 0;
   color: #ccc;
+  font-size: 0.95em;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.course-meta {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.instructor, .level {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #bbb;
   font-size: 0.9em;
-  flex-grow: 1;
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .course-link {
-  display: inline-block;
-  background-color: #4CAF50;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
   color: white;
-  padding: 8px 16px;
-  border-radius: 4px;
+  padding: 12px 24px;
+  border-radius: 25px;
   text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95em;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+  width: 100%;
   text-align: center;
-  transition: background-color 0.2s;
 }
 
 .course-link:hover {
-  background-color: #45a049;
+  background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.course-link:active {
+  transform: translateY(0);
 }
 
 @media (max-width: 768px) {
-  .recommendation-cards {
-    grid-template-columns: 1fr;
+  .chat-room {
+    width: 95vw;
+    max-width: none;
+    margin: 0 2.5vw;
+  }
+  
+  .message {
+    max-width: 85%;
+  }
+  
+  .recommendation-message {
+    max-width: 95%;
+    width: 95%;
+  }
+  
+  .course-card {
+    margin: 0;
+  }
+  
+  .course-thumbnail {
+    height: 160px;
+  }
+  
+  .course-info {
+    padding: 16px;
+  }
+  
+  .course-title {
+    font-size: 1.1em;
+  }
+  
+  .course-meta {
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  
+  .instructor, .level {
+    font-size: 0.85em;
+    padding: 4px 10px;
   }
 }
 </style>
