@@ -25,6 +25,15 @@
         {{ isLoading ? '로그인 중...' : '로그인' }}
       </button>
       <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+
+      <div class="social-section">
+        <p>또는 소셜 계정으로 로그인:</p>
+        <div class="social-buttons">
+          <button type="button" class="social-button google" @click="socialLogin('google')">구글 로그인</button>
+          <button type="button" class="social-button naver" @click="socialLogin('naver')">네이버 로그인</button>
+        </div>
+      </div>
+      
     </form>
   </div>
 </template>
@@ -78,6 +87,10 @@ const login = async () => {
   }
 };
 
+// 소셜 로그인 함수 추가
+const socialLogin = (provider) => {
+  window.location.href = `http://localhost:8080/oauth2/authorization/${provider}`;
+};
 </script>
 
 <style scoped>
@@ -162,5 +175,45 @@ input:focus {
   color: #ff5252;
   font-weight: bold;
   text-align: center;
+}
+.social-section {
+  margin-top: 30px;
+  text-align: center;
+  color: #bbb;
+}
+
+.social-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.social-button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.google {
+  background-color: #ffffff;
+  color: #000;
+}
+
+.google:hover {
+  background-color: #e0e0e0;
+}
+
+.naver {
+  background-color: #03c75a;
+  color: white;
+}
+
+.naver:hover {
+  background-color: #02b14a;
 }
 </style>

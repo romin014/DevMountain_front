@@ -37,8 +37,8 @@
       <div class="social-section">
         <p>또는 소셜 계정으로 가입:</p>
         <div class="social-buttons">
-          <button type="button" class="social-button google" @click="socialLogin('google')">구글 로그인</button>
-          <button type="button" class="social-button naver" @click="socialLogin('naver')">네이버 로그인</button>
+          <button type="button" class="social-button google" @click="socialLogin('google')">구글 회원가입</button>
+          <button type="button" class="social-button naver" @click="socialLogin('naver')">네이버 회원가입</button>
         </div>
       </div>
     </form>

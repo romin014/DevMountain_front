@@ -25,20 +25,38 @@ const handleRoomSelect = (newRoomId) => {
 }
 
 onMounted(async () => {
+  // 소셜 로그인 후 리다이렉트된 경우 세션 재확인
+  const urlParams = new URLSearchParams(window.location.search)
+  const isLoginSuccess = urlParams.get('login') === 'success'
+  
+  if (isLoginSuccess) {
+    console.log('소셜 로그인 성공 감지, 세션 재확인 중...')
+    // URL에서 login=success 파라미터 제거
+    window.history.replaceState({}, document.title, window.location.pathname)
+  }
+
   try {
     const res = await axios.get('http://localhost:8080/users/me', {
       withCredentials: true
     })
 
-    if (!res.data || !res.data.name) throw new Error('비회원')
+    console.log('회원 정보 조회 성공:', res.data)
 
-    username.value = res.data.name
-    localStorage.setItem('username', res.data.name)
+    // name이 null이어도 email이나 userId가 있으면 회원으로 인식
+    if (!res.data || (!res.data.name && !res.data.email && !res.data.userId)) {
+      throw new Error('비회원')
+    }
+
+    // name이 null이면 email을 사용
+    username.value = res.data.name || res.data.email || '회원'
+    localStorage.setItem('username', username.value)
     isGuest.value = false
 
     const roomsResponse = await axios.get('http://localhost:8080/chatrooms', {
       withCredentials: true
     })
+
+    console.log('채팅방 목록 조회 성공:', roomsResponse.data)
 
     if (roomsResponse.data.result && roomsResponse.data.result.length > 0) {
       roomId.value = roomsResponse.data.result[0].chatroomId
