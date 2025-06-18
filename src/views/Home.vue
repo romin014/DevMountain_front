@@ -10,6 +10,7 @@ const isGuest = ref(true)
 const guestRoomId = ref(null)
 const roomId = ref(null)
 const ws = ref(null)
+const loginMessage = ref('')
 
 const resolvedRoomId = computed(() => {
   return isGuest.value ? guestRoomId.value : roomId.value
@@ -28,10 +29,21 @@ onMounted(async () => {
   // 소셜 로그인 후 리다이렉트된 경우 세션 재확인
   const urlParams = new URLSearchParams(window.location.search)
   const isLoginSuccess = urlParams.get('login') === 'success'
+  const message = urlParams.get('message') // 백엔드에서 전달받은 메시지
   
   if (isLoginSuccess) {
     console.log('소셜 로그인 성공 감지, 세션 재확인 중...')
-    // URL에서 login=success 파라미터 제거
+    
+    // 백엔드에서 전달받은 메시지가 있으면 표시
+    if (message) {
+      loginMessage.value = decodeURIComponent(message)
+      // 3초 후 메시지 자동 제거
+      setTimeout(() => {
+        loginMessage.value = ''
+      }, 3000)
+    }
+    
+    // URL에서 파라미터 제거
     window.history.replaceState({}, document.title, window.location.pathname)
   }
 
@@ -88,6 +100,11 @@ const handleLogout = async () => {
 
 <template>
   <div class="wrapper">
+    <!-- 소셜 로그인 성공 메시지 -->
+    <div v-if="loginMessage" class="login-success-message">
+      {{ loginMessage }}
+    </div>
+    
     <header class="header">
       <h1 class="logo">🌌 Devmountain</h1>
       <p class="subtext">
@@ -130,6 +147,32 @@ const handleLogout = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.login-success-message {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #4CAF50;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: bold;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateX(-50%) translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
 }
 
 .header {

@@ -24,7 +24,7 @@
       <button type="submit" :disabled="isLoading" class="login-button">
         {{ isLoading ? '로그인 중...' : '로그인' }}
       </button>
-      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+      <p v-if="errorMessage" class="error-message" :class="{ 'social-login-guide': errorMessage.includes('소셜 로그인으로 가입되었습니다') }">{{ errorMessage }}</p>
 
       <div class="social-section">
         <p>또는 소셜 계정으로 로그인:</p>
@@ -78,7 +78,14 @@ const login = async () => {
   } catch (err) {
     console.error('로그인 실패', err);
     if (err.response?.data?.message) {
-      errorMessage.value = '로그인 실패: ' + err.response.data.message;
+      const errorMsg = err.response.data.message;
+      
+      // 소셜 로그인 안내 메시지인 경우 특별 처리
+      if (errorMsg.includes('소셜로그인을 이용해주세요')) {
+        errorMessage.value = '이 계정은 소셜 로그인으로 가입되었습니다. 아래 소셜 로그인 버튼을 이용해주세요.';
+      } else {
+        errorMessage.value = '로그인 실패: ' + errorMsg;
+      }
     } else {
       errorMessage.value = '로그인 중 오류가 발생했습니다.';
     }
@@ -176,6 +183,16 @@ input:focus {
   font-weight: bold;
   text-align: center;
 }
+
+.social-login-guide {
+  color: #ff9800;
+  background-color: rgba(255, 152, 0, 0.1);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  margin-bottom: 16px;
+}
+
 .social-section {
   margin-top: 30px;
   text-align: center;
