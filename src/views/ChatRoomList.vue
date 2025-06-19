@@ -2,7 +2,7 @@
   <div class="chatroom-list">
     <div class="list-header">
       <h2>채팅방 목록</h2>
-      <button class="create-room-btn" @click="showCreateRoomModal = true">
+      <button class="create-room-btn" @click="createRoom">
         새 채팅방 만들기
       </button>
     </div>
@@ -25,22 +25,6 @@
       </div>
     </div>
 
-    <div v-if="showCreateRoomModal" class="modal-overlay">
-      <div class="modal-content">
-        <h3>새 채팅방 만들기</h3>
-        <input
-            v-model="newRoomName"
-            type="text"
-            placeholder="채팅방 이름을 입력하세요"
-            class="room-name-input"
-        />
-        <div class="modal-buttons">
-          <button @click="createRoom" class="create-btn">생성</button>
-          <button @click="showCreateRoomModal = false" class="cancel-btn">취소</button>
-        </div>
-      </div>
-    </div>
-
     <div v-if="showDeleteModal" class="modal-overlay">
       <div class="modal-content">
         <h3>채팅방 삭제</h3>
@@ -56,7 +40,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import {ref, onMounted, onUnmounted} from 'vue'
 import axios from 'axios'
 
 const props = defineProps({
@@ -68,9 +52,7 @@ const props = defineProps({
 
 const chatRooms = ref([])
 const selectedRoomId = ref(null)
-const showCreateRoomModal = ref(false)
 const showDeleteModal = ref(false)
-const newRoomName = ref('')
 const roomToDelete = ref(null)
 
 const formatDate = (dateString) => {
@@ -96,16 +78,13 @@ const fetchChatRooms = async () => {
 }
 
 const createRoom = async () => {
-  if (!newRoomName.value.trim()) {
-    alert('채팅방 이름을 입력해주세요')
-    return
-  }
-
+  // 기본 채팅방 이름 사용
+  const defaultRoomName = '새 채팅방'
   try {
     const response = await axios.post(
         'http://localhost:8080/chatrooms',
         {
-          chatroomName: newRoomName.value.trim()
+          chatroomName: defaultRoomName
         },
         { withCredentials: true }
     )
@@ -114,9 +93,6 @@ const createRoom = async () => {
 
     if (response.data.success) {
       await fetchChatRooms()
-      showCreateRoomModal.value = false
-      newRoomName.value = ''
-
       if (response.data.result && response.data.result.chatroomId) {
         selectRoom(response.data.result)
       }
@@ -161,6 +137,9 @@ const deleteRoom = async () => {
 
 onMounted(() => {
   fetchChatRooms()
+  window.addEventListener('roomNameUpdate',fetchChatRooms)})
+onUnmounted(() => {
+  window.removeEventListener('roomNameUpdate',fetchChatRooms)
 })
 </script>
 
