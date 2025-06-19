@@ -69,10 +69,12 @@ Pro 멤버십 업그레이드 시:
 </template>
 
 <script setup>
+// Vue의 반응형 변수, 라이프사이클 훅, axios 등 import
 import { ref, watch, onUnmounted } from 'vue'
 import axios from 'axios'
 import freeMembershipIcon from '@/assets/free.png'
 
+// 부모 컴포넌트로부터 roomId(채팅방), isGuest(비회원 여부) props로 전달받음
 const props = defineProps({
   roomId: {
     type: [String, null],
@@ -85,15 +87,16 @@ const props = defineProps({
   }
 })
 
-const messages = ref([])
-const newMessage = ref('')
-const ws = ref(null)
-const isConnected = ref(false)
-const messagesContainer = ref(null)
+// 채팅 메시지 목록, 입력값, WebSocket, 연결상태, 스크롤 ref 선언
+const messages = ref([]) // 채팅 메시지 배열
+const newMessage = ref('') // 입력창 메시지
+const ws = ref(null) // WebSocket 객체
+const isConnected = ref(false) // WebSocket 연결 상태
+const messagesContainer = ref(null) // 메시지 영역 DOM 참조
 
+// 과거 메시지 불러오기(채팅방 진입/새로고침 시)
 const fetchMessages = async () => {
-  if (!props.roomId || props.isGuest) return
-
+  if (!props.roomId || props.isGuest) return // 방 ID 없거나 비회원이면 무시
   try {
     const response = await axios.get(
         `http://localhost:8080/chatrooms/${props.roomId}/messages`,
@@ -101,7 +104,7 @@ const fetchMessages = async () => {
     )
 
     if (response.data.success) {
-      console.log('불러온 메시지:', response.data.result)
+      // AI_REQUEST 타입 메시지는 필터링, sender가 AI면 aiResponse 플래그 추가
       messages.value = response.data.result
         .filter(msg => {
           if (msg.userId && typeof msg.message === 'string') {
@@ -111,7 +114,7 @@ const fetchMessages = async () => {
                 return false
               }
             } catch (e) {
-              // 평문은 표시
+              // 평문은 그대로 표시
             }
           }
           return true
@@ -127,7 +130,9 @@ const fetchMessages = async () => {
   }
 }
 
+// 메시지 포맷팅(추천 메시지/일반 메시지 구분)
 const formatMessage = (message) => {
+  // 추천 메시지(배열)일 경우 포맷
   if (message.messageType === 'RECOMMENDATION' && Array.isArray(message.recommendations)) {
     return message.recommendations.map((rec, idx) => `
 [추천 강의 ${idx + 1}] ${rec.title}
@@ -137,7 +142,7 @@ ${rec.description}
 썸네일: ${rec.thumbnailUrl}
     `).join('\n\n')
   }
-
+  // AI_REQUEST JSON 메시지는 content만 추출
   if (message.userId && typeof message.message === 'string') {
     try {
       const parsed = JSON.parse(message.message)
@@ -146,14 +151,13 @@ ${rec.description}
       return message.message
     }
   }
-
+  // 기타 메시지(일반 텍스트)
   return message.message || message.text || message.content || ''
 }
 
-// 추천 강의가 있는지 확인하는 함수 추가
+// 추천 강의가 있는지 확인(카드 UI 표시 조건)
 const hasRecommendations = (message) => {
   if (message.messageType !== 'RECOMMENDATION') return false
-  
   try {
     const recommendations = parseRecommendation(message)
     console.log('Has recommendations check:', recommendations)
@@ -164,6 +168,7 @@ const hasRecommendations = (message) => {
   }
 }
 
+// WebSocket 연결 및 메시지 수신 핸들러
 const connectWebSocket = () => {
   if (!props.roomId) {
     console.log('roomId가 없어 WebSocket 연결을 시도하지 않습니다')
@@ -173,18 +178,16 @@ const connectWebSocket = () => {
   console.log('WebSocket 연결 시도:', props.roomId)
   const token = localStorage.getItem('token')
   const wsUrl = `ws://localhost:8080/ws/chat?roomId=${props.roomId}${token ? `&token=${token}` : ''}`
-
   ws.value = new WebSocket(wsUrl)
-
   ws.value.onopen = () => {
     console.log('WebSocket 연결 성공')
     isConnected.value = true
-    fetchMessages()
+    fetchMessages() // 연결되면 과거 메시지 불러오기
   }
-
   ws.value.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data)
+      // AI 응답 메시지만 화면에 추가
       if (data.aiResponse) {
         messages.value.push(data)
         scrollToBottom()
@@ -193,29 +196,28 @@ const connectWebSocket = () => {
       console.error('메시지 파싱 실패:', error)
     }
   }
-
   ws.value.onerror = () => isConnected.value = false
   ws.value.onclose = () => isConnected.value = false
 }
 
+// 메시지 전송(입력값 서버로 POST, WebSocket으로 AI 요청 전송)
 const sendMessage = async () => {
   if (!newMessage.value.trim() || !props.roomId) return
-
   try {
     const response = await axios.post(
         `http://localhost:8080/chatrooms/${props.roomId}/messages`,
         { message: newMessage.value.trim() },
         { withCredentials: true }
     )
-
     if (response.data.success) {
+      // 내 메시지 화면에 추가
       messages.value.push({
         ...response.data.result,
         aiResponse: false
       })
       newMessage.value = ''
       scrollToBottom()
-
+      // AI에게 WebSocket으로 요청 전송
       if (ws.value && ws.value.readyState === WebSocket.OPEN) {
         const aiRequest = {
           type: 'AI_REQUEST',
@@ -231,6 +233,7 @@ const sendMessage = async () => {
   }
 }
 
+// 스크롤을 항상 맨 아래로 이동(새 메시지 도착 시)
 const scrollToBottom = () => {
   setTimeout(() => {
     if (messagesContainer.value) {
@@ -239,6 +242,7 @@ const scrollToBottom = () => {
   }, 100)
 }
 
+// 추천 메시지 중 "아쉽지만..." 텍스트 포함 여부로 일반 채팅처럼 표시할지 판단
 const isChatLikeRecommendation = (message) => {
   if (message.messageType !== 'RECOMMENDATION') return false;
 
@@ -248,10 +252,10 @@ const isChatLikeRecommendation = (message) => {
         ? message.content
         : JSON.stringify(message.content))
     : '';
-
   return content.includes('아쉽지만, 현재 조건에 맞는 강의를 찾지 못했어요');
 };
 
+// 메시지 보낸이 표시(나/AI/AI추천)
 const getMessageSender = (message) => {
   if (!message.messageType) return '나';
   if (message.messageType === 'CHAT' || isChatLikeRecommendation(message)) return 'AI';
@@ -259,6 +263,7 @@ const getMessageSender = (message) => {
   return 'AI';
 };
 
+// 추천 메시지에서 강의 배열 추출(여러 포맷 대응)
 const parseRecommendation = (message) => {
   try {
     console.log('Parsing recommendation message:', message)
@@ -297,6 +302,7 @@ const parseRecommendation = (message) => {
   }
 };
 
+// roomId가 바뀌면 WebSocket 재연결 및 메시지 초기화
 watch(() => props.roomId, (newRoomId, oldRoomId) => {
   if (newRoomId !== oldRoomId) {
     messages.value = []
@@ -305,6 +311,7 @@ watch(() => props.roomId, (newRoomId, oldRoomId) => {
   }
 }, { immediate: true })
 
+// 컴포넌트 언마운트 시 WebSocket 정리
 onUnmounted(() => {
   if (ws.value) ws.value.close()
 })
