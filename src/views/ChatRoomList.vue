@@ -2,7 +2,7 @@
   <div class="chatroom-list">
     <div class="list-header">
       <h2>채팅방 목록</h2>
-      <button class="create-room-btn" @click="showCreateRoomModal = true">
+      <button class="create-room-btn" @click="createRoom">
         새 채팅방 만들기
       </button>
     </div>
@@ -25,22 +25,6 @@
       </div>
     </div>
 
-    <div v-if="showCreateRoomModal" class="modal-overlay">
-      <div class="modal-content">
-        <h3>새 채팅방 만들기</h3>
-        <input
-            v-model="newRoomName"
-            type="text"
-            placeholder="채팅방 이름을 입력하세요"
-            class="room-name-input"
-        />
-        <div class="modal-buttons">
-          <button @click="createRoom" class="create-btn">생성</button>
-          <button @click="showCreateRoomModal = false" class="cancel-btn">취소</button>
-        </div>
-      </div>
-    </div>
-
     <div v-if="showDeleteModal" class="modal-overlay">
       <div class="modal-content">
         <h3>채팅방 삭제</h3>
@@ -56,7 +40,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import {ref, onMounted, onUnmounted} from 'vue'
 import axios from 'axios'
 
 const props = defineProps({
@@ -68,10 +52,16 @@ const props = defineProps({
 
 const chatRooms = ref([])
 const selectedRoomId = ref(null)
-const showCreateRoomModal = ref(false)
 const showDeleteModal = ref(false)
-const newRoomName = ref('')
 const roomToDelete = ref(null)
+
+// 이벤트 콜백을 별도 함수로 분리
+const handleRoomNameUpdate = () => {
+  console.log('roomNameUpdate 이벤트 감지!')
+  setTimeout(() => {
+    fetchChatRooms()
+  }, 1000)
+}
 
 const formatDate = (dateString) => {
   if (!dateString) return '날짜 없음'
@@ -85,27 +75,27 @@ const selectRoom = (room) => {
 
 const fetchChatRooms = async () => {
   try {
+    console.log('채팅방 목록 조회 시작')
     const response = await axios.get('http://localhost:8080/chatrooms', {
       withCredentials: true
     })
-    console.log('채팅방 목록:', response.data)
-    chatRooms.value = response.data.result || []
+    console.log('채팅방 목록 응답:', response.data)
+    // 새 배열로 할당하여 반응성 보장
+    chatRooms.value = [...(response.data.result || [])]
+    console.log('chatRooms.value 할당 후:', chatRooms.value)
   } catch (error) {
     console.error('채팅방 목록 조회 실패:', error)
   }
 }
 
 const createRoom = async () => {
-  if (!newRoomName.value.trim()) {
-    alert('채팅방 이름을 입력해주세요')
-    return
-  }
-
+  // 기본 채팅방 이름 사용
+  const defaultRoomName = ''
   try {
     const response = await axios.post(
         'http://localhost:8080/chatrooms',
         {
-          chatroomName: newRoomName.value.trim()
+          chatroomName: defaultRoomName
         },
         { withCredentials: true }
     )
@@ -113,13 +103,13 @@ const createRoom = async () => {
     console.log('채팅방 생성 응답:', response.data)
 
     if (response.data.success) {
-      await fetchChatRooms()
-      showCreateRoomModal.value = false
-      newRoomName.value = ''
-
+      setTimeout(() => {
+        fetchChatRooms()
+      }, 1000)
       if (response.data.result && response.data.result.chatroomId) {
         selectRoom(response.data.result)
       }
+      window.dispatchEvent(new CustomEvent('roomNameUpdate'))
     } else {
       alert('채팅방 생성에 실패했습니다: ' + (response.data.message || '알 수 없는 오류'))
     }
@@ -144,7 +134,9 @@ const deleteRoom = async () => {
     )
 
     if (response.data.success) {
-      await fetchChatRooms()
+      setTimeout(() => {
+        fetchChatRooms()
+      }, 1000)
       showDeleteModal.value = false
       roomToDelete.value = null
 
@@ -152,6 +144,7 @@ const deleteRoom = async () => {
         selectedRoomId.value = null
         props.onRoomSelect(null)
       }
+      window.dispatchEvent(new CustomEvent('roomNameUpdate'))
     }
   } catch (error) {
     console.error('채팅방 삭제 실패:', error)
@@ -161,6 +154,10 @@ const deleteRoom = async () => {
 
 onMounted(() => {
   fetchChatRooms()
+  window.addEventListener('roomNameUpdate', handleRoomNameUpdate)
+})
+onUnmounted(() => {
+  window.removeEventListener('roomNameUpdate', handleRoomNameUpdate)
 })
 </script>
 

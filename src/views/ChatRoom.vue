@@ -192,6 +192,11 @@ const connectWebSocket = () => {
         messages.value.push(data)
         scrollToBottom()
       }
+      if(data.type === "ROOM_NAME_UPDATE"){
+        console.log("room name update");
+        console.log(data);
+        window.dispatchEvent(new CustomEvent("roomNameUpdate", {detail: data}));
+      }
     } catch (error) {
       console.error('메시지 파싱 실패:', error)
     }
