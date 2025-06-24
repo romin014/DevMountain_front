@@ -2,14 +2,12 @@
   <div class="chat-room">
     <div class="chat-header">
       <h2>회원 채팅방</h2>
-      <!-- 멤버십 아이콘 -->
-<!--      <a href="https://www.flaticon.com/kr/free-icons/-" title="비어 있는 아이콘">비어 있는 아이콘 제작자: Pixel perfect - Flaticon</a>-->
       <div class="membership-status">
-        <img 
-          :src="freeMembershipIcon" 
-          alt="Free 멤버십" 
-          class="membership-icon"
-          title="Free 멤버십 혜택:
+        <img
+            :src="freeMembershipIcon"
+            alt="Free 멤버십"
+            class="membership-icon"
+            title="Free 멤버십 혜택:
 • 무제한 채팅 이용
 • AI 강의 추천
 • 기본 학습 경로 제공
@@ -32,7 +30,6 @@ Pro 멤버십 업그레이드 시:
           <div class="message-header">
             <div class="message-sender">{{ getMessageSender(message) }}</div>
           </div>
-          <!-- 추천 강의인 경우 카드 형태로 표시 -->
           <div v-if="message.messageType === 'RECOMMENDATION' && !isChatLikeRecommendation(message) && hasRecommendations(message)" class="recommendation-cards">
             <div v-for="(course, idx) in parseRecommendation(message)" :key="idx" class="course-card">
               <div class="course-thumbnail">
@@ -50,7 +47,6 @@ Pro 멤버십 업그레이드 시:
               </div>
             </div>
           </div>
-          <!-- 일반 메시지 또는 텍스트 추천 메시지 -->
           <div v-else class="message-text">{{ formatMessage(message) }}</div>
         </div>
       </div>
@@ -93,6 +89,7 @@ const newMessage = ref('') // 입력창 메시지
 const ws = ref(null) // WebSocket 객체
 const isConnected = ref(false) // WebSocket 연결 상태
 const messagesContainer = ref(null) // 메시지 영역 DOM 참조
+const streamingAiMessage = ref(null)
 
 // 과거 메시지 불러오기(채팅방 진입/새로고침 시)
 const fetchMessages = async () => {
@@ -106,23 +103,23 @@ const fetchMessages = async () => {
     if (response.data.success) {
       // AI_REQUEST 타입 메시지는 필터링, sender가 AI면 aiResponse 플래그 추가
       messages.value = response.data.result
-        .filter(msg => {
-          if (msg.userId && typeof msg.message === 'string') {
-            try {
-              const parsed = JSON.parse(msg.message)
-              if (parsed && parsed.type === 'AI_REQUEST') {
-                return false
+          .filter(msg => {
+            if (msg.userId && typeof msg.message === 'string') {
+              try {
+                const parsed = JSON.parse(msg.message)
+                if (parsed && parsed.type === 'AI_REQUEST') {
+                  return false
+                }
+              } catch (e) {
+                // 평문은 그대로 표시
               }
-            } catch (e) {
-              // 평문은 그대로 표시
             }
-          }
-          return true
-        })
-        .map(msg => ({
-          ...msg,
-          aiResponse: msg.sender === 'AI'
-        }))
+            return true
+          })
+          .map(msg => ({
+            ...msg,
+            aiResponse: msg.sender === 'AI'
+          }))
       scrollToBottom()
     }
   } catch (error) {
@@ -186,23 +183,63 @@ const connectWebSocket = () => {
   }
   ws.value.onmessage = (event) => {
     try {
-      const data = JSON.parse(event.data)
-      // AI 응답 메시지만 화면에 추가
-      if (data.aiResponse) {
-        messages.value.push(data)
-        scrollToBottom()
-      }
-      if(data.type === "ROOM_NAME_UPDATE"){
+      const data = JSON.parse(event.data);
+
+      // 1. 방 이름 업데이트 메시지 처리
+      if (data.type === "ROOM_NAME_UPDATE") {
         console.log("room name update");
-        console.log(data);
-        window.dispatchEvent(new CustomEvent("roomNameUpdate", {detail: data}));
+        window.dispatchEvent(new CustomEvent("roomNameUpdate", { detail: data }));
+        return;
       }
+
+      // 2. 추천 메시지 처리
+      if (data.messageType === 'RECOMMENDATION') {
+        messages.value.push(data);
+        scrollToBottom();
+        return;
+      }
+
+      // 3. AI 채팅 메시지 스트리밍 처리 (타이핑 효과 구현)
+      // [수정] data.isAiResponse -> data.aiResponse 로 변경
+      if (data.aiResponse && data.messageType === 'CHAT') {
+
+        // data.first, data.last 는 이전 답변에서 수정한 그대로 유지합니다.
+        if (data.first) {
+          const newAiMessage = {
+            ...data,
+            message: data.message || '',
+          };
+          messages.value.push(newAiMessage);
+          streamingAiMessage.value = newAiMessage;
+        }
+        else if (!data.last && streamingAiMessage.value) {
+          streamingAiMessage.value.message += data.message || '';
+        }
+        else if (data.last) {
+          streamingAiMessage.value = null;
+        }
+
+        scrollToBottom();
+        return; // 스트리밍 메시지 처리가 끝나면 여기서 함수를 종료합니다.
+      }
+
+      // 4. 스트리밍이 아닌 다른 AI 응답이 있을 경우를 위한 폴백
+      // (위의 if문에서 return 처리되므로, 스트리밍 메시지는 이 코드를 실행하지 않습니다)
+      if (data.aiResponse) {
+        messages.value.push(data);
+        scrollToBottom();
+      }
+
     } catch (error) {
-      console.error('메시지 파싱 실패:', error)
+      console.error('메시지 파싱 실패:', error);
     }
   }
+
   ws.value.onerror = () => isConnected.value = false
-  ws.value.onclose = () => isConnected.value = false
+  ws.value.onclose = () => {
+    isConnected.value = false
+    streamingAiMessage.value = null;
+  }
 }
 
 // 메시지 전송(입력값 서버로 POST, WebSocket으로 AI 요청 전송)
@@ -253,10 +290,10 @@ const isChatLikeRecommendation = (message) => {
 
   // content가 undefined/null이어도 항상 문자열로 변환
   const content = message && message.content != null
-    ? (typeof message.content === 'string'
-        ? message.content
-        : JSON.stringify(message.content))
-    : '';
+      ? (typeof message.content === 'string'
+          ? message.content
+          : JSON.stringify(message.content))
+      : '';
   return content.includes('아쉽지만, 현재 조건에 맞는 강의를 찾지 못했어요');
 };
 
@@ -272,33 +309,33 @@ const getMessageSender = (message) => {
 const parseRecommendation = (message) => {
   try {
     console.log('Parsing recommendation message:', message)
-    
+
     // message.content에서 recommendations 추출
     let content = message.content
     if (typeof content === 'string') {
       content = JSON.parse(content)
     }
-    
+
     console.log('Parsed content:', content)
-    
+
     // content가 직접 recommendations 배열인 경우
     if (Array.isArray(content)) {
       console.log('Content is array:', content)
       return content
     }
-    
+
     // content.recommendations가 있는 경우
     if (content && content.recommendations && Array.isArray(content.recommendations)) {
       console.log('Found content.recommendations:', content.recommendations)
       return content.recommendations
     }
-    
+
     // message.recommendations가 있는 경우 (기존 로직)
     if (message.recommendations && Array.isArray(message.recommendations)) {
       console.log('Found message.recommendations:', message.recommendations)
       return message.recommendations
     }
-    
+
     console.log('No recommendations found, returning empty array')
     return []
   } catch (e) {
@@ -311,6 +348,7 @@ const parseRecommendation = (message) => {
 watch(() => props.roomId, (newRoomId, oldRoomId) => {
   if (newRoomId !== oldRoomId) {
     messages.value = []
+    streamingAiMessage.value = null; // [추가] 방 변경 시 스트리밍 참조 초기화
     if (ws.value) ws.value.close()
     if (newRoomId) connectWebSocket()
   }
@@ -319,6 +357,7 @@ watch(() => props.roomId, (newRoomId, oldRoomId) => {
 // 컴포넌트 언마운트 시 WebSocket 정리
 onUnmounted(() => {
   if (ws.value) ws.value.close()
+  streamingAiMessage.value = null; // [추가] 컴포넌트 파괴 시 스트리밍 참조 초기화
 })
 </script>
 
@@ -667,38 +706,38 @@ onUnmounted(() => {
     max-width: none;
     margin: 0 2.5vw;
   }
-  
+
   .message {
     max-width: 85%;
   }
-  
+
   .recommendation-message {
     max-width: 95%;
     width: 95%;
   }
-  
+
   .course-card {
     margin: 0;
   }
-  
+
   .course-thumbnail {
     height: 160px;
   }
-  
+
   .course-info {
     padding: 16px;
     box-sizing: border-box;
   }
-  
+
   .course-title {
     font-size: 1.1em;
   }
-  
+
   .course-meta {
     gap: 12px;
     margin-bottom: 16px;
   }
-  
+
   .instructor, .level {
     font-size: 0.85em;
     padding: 4px 10px;
