@@ -49,9 +49,9 @@
 </template>
 
 <script setup>
-import {ref, onMounted, onBeforeUnmount, watch} from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import axios from 'axios'
-import guestMembershipIcon from '@/assets/guest.png'  // 이미지 import
+import guestMembershipIcon from '@/assets/guest.png'
 
 const props = defineProps({
   roomId: String,
@@ -59,70 +59,96 @@ const props = defineProps({
 })
 
 const socket = ref(null)
-const messages = ref([{sender: '시스템', text: '채팅방에 입장했습니다.'}])
+const messages = ref([{ sender: '시스템', text: '채팅방에 입장했습니다.' }])
 const newMessage = ref('')
-const guestUsername = '익명'  // 비회원 사용자 이름을 고정
+const guestUsername = '익명'
+
+// [추가] 현재 스트리밍(타이핑 효과) 중인 AI 메시지를 참조하기 위한 ref
+const streamingAiMessage = ref(null)
 
 const connectWebSocket = () => {
   if (!props.roomId) return
 
   socket.value = new WebSocket(`ws://localhost:8080/ws/chat?roomId=${props.roomId}`)
 
-  socket.value.onopen = () => console.log('WebSocket 연결 성공')
+  socket.value.onopen = () => console.log('WebSocket 연결 성공 (비회원)')
 
   socket.value.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data)
-      console.log('Received message:', data)
 
-      // message 필드가 JSON 문자열인 경우 파싱
-      let messageContent
-      try {
-        messageContent = JSON.parse(data.message)
-      } catch {
-        messageContent = null
+      // 1) AI 일반 채팅 응답 (스트리밍, 타이핑 효과) 처리
+      // isAiResponse와 messageType으로 명확히 구분
+      if (data.aiResponse && data.messageType === 'CHAT') {
+        // [수정된 로직]
+        // 스트리밍 시작 (첫 번째 데이터)
+        if (data.first && !data.last) {
+          const newAiMessage = {
+            sender: '시스템', // AI 응답 보낸이를 '시스템'으로 고정
+            text: data.message || '',
+          };
+          messages.value.push(newAiMessage);
+          streamingAiMessage.value = newAiMessage; // 스트리밍 대상으로 이 메시지를 지정
+        }
+        // 스트리밍 중간 데이터
+        else if (!data.first && !data.last && streamingAiMessage.value) {
+          streamingAiMessage.value.text += data.message || ''; // 기존 메시지에 텍스트 추가
+        }
+        // 스트리밍 마지막 신호
+        else if (data.last) {
+          if (streamingAiMessage.value) {
+            streamingAiMessage.value.text += data.message || ''; // 마지막 텍스트 조각 추가
+          }
+          streamingAiMessage.value = null; // 스트리밍 종료
+        }
+        scrollToBottom()
+        return // 스트리밍 처리 후 함수 종료
       }
 
-      // 사용자가 보낸 메시지의 JSON 응답은 무시
-      if (messageContent && 
-          messageContent.messageType === 'CHAT' && 
-          !messageContent.isAiResponse && 
-          messageContent.sender === guestUsername) {
-        return
-      }
-
-      // 메시지 타입에 따라 다르게 처리
+      // 2) AI 강의 추천 및 기타 시스템 메시지 (한 번에 표시)
       switch (data.messageType) {
         case 'WELCOME':
-        case 'CHAT':
         case 'ERROR':
           messages.value.push({
             sender: '시스템',
             text: data.message
           })
           break
+
+          // [핵심 로직] 추천 메시지는 한 번에 전체를 표시
         case 'RECOMMENDATION':
           if (data.recommendations && data.recommendations.length > 0) {
-            // 추천 강의 목록을 포맷팅하여 표시
-            const formattedMessage = data.recommendations.map((rec, index) => 
-              `[추천 강의 ${index + 1}]\n${rec.title}\n${rec.description}`
+            const formattedMessage = "다음은 AI가 추천하는 강의입니다:\n\n" + data.recommendations.map((rec, index) =>
+                `[추천 강의 ${index + 1}: ${rec.title}]\n${rec.description}`
             ).join('\n\n')
+
             messages.value.push({
               sender: '시스템',
               text: formattedMessage
             })
           }
           break
+
         default:
-          // 기타 메시지 타입은 그대로 표시
-          messages.value.push({
-            sender: '시스템',
-            text: data.message || JSON.stringify(data)
-          })
+          // 그 외의 모든 메시지는 그대로 표시
+          if (data.message) {
+            messages.value.push({
+              sender: data.sender || '시스템',
+              text: data.message
+            });
+          }
+          break
       }
+
       scrollToBottom()
+
     } catch (error) {
       console.error('메시지 파싱 실패:', error)
+      messages.value.push({
+        sender: '시스템',
+        text: event.data // 파싱 실패 시 원본 데이터 표시
+      })
+      scrollToBottom()
     }
   }
 
@@ -135,13 +161,11 @@ const sendMessage = () => {
 
   const msg = newMessage.value.trim()
 
-  // 내가 보낸 메시지를 즉시 화면에 추가
   messages.value.push({
     sender: guestUsername,
     text: msg
   })
 
-  // Send message in the format expected by ChatService
   const aiRequest = {
     type: 'CHAT',
     message: msg,
@@ -149,11 +173,11 @@ const sendMessage = () => {
     sender: guestUsername,
     isAiResponse: false,
     messageType: 'CHAT',
-    userId: null,  // 비회원이므로 userId는 null
+    userId: null,
     chatRoomId: props.roomId
   }
   socket.value.send(JSON.stringify(aiRequest))
-  
+
   newMessage.value = ''
   scrollToBottom()
 }
@@ -166,7 +190,13 @@ const scrollToBottom = () => {
 }
 
 watch(() => props.roomId, (newVal) => {
-  if (newVal) connectWebSocket()
+  if (newVal) {
+    if (socket.value) {
+      socket.value.close();
+    }
+    messages.value = [{ sender: '시스템', text: '채팅방에 다시 연결합니다.' }];
+    connectWebSocket();
+  }
 })
 
 onMounted(() => {
