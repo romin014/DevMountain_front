@@ -45,11 +45,11 @@ export default defineConfig({
     server: {
         proxy: {
             '/users': {
-                target: 'http://localhost:8080',
+                target: 'http://app:8080',
                 changeOrigin: true,
             },
             '/ws': {
-                target: 'http://localhost:8080',
+                target: 'http://app:8080',
                 ws: true,
                 changeOrigin: true,
                 secure: false
