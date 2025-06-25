@@ -11,9 +11,12 @@
 • 무제한 채팅 이용
 • AI 강의 추천
 • 기본 학습 경로 제공
+• 시간당 10개 채팅 가능
 
 Pro 멤버십 업그레이드 시:
-• 추후 추가 예정"
+• AI 강의 추천
+• 기본 학습 경로 제공
+• 시간당 20개 채팅 가능"
         />
       </div>
     </div>
@@ -270,8 +273,13 @@ const sendMessage = async () => {
       }
     }
   } catch (error) {
-    console.error('메시지 전송 실패:', error)
-    alert('메시지 전송에 실패했습니다')
+    if (error.response && error.response.status === 429) {
+      // 서버에서 내려준 메시지 보여주기
+      alert(error.response.data || '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
+    } else {
+      console.error('메시지 전송 실패:', error)
+      alert('메시지 전송에 실패했습니다')
+    }
   }
 }
 
