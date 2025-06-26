@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  frontend:
+    container_name: devmountain-frontend
+    image: node:18
+    working_dir: /app
+    volumes:
+      - ./:/app
+    ports:
+      - "5173:5173"  # Vite 기본 포트
+    command: sh -c "npm install && npm run dev -- --host"
+    networks:
+      - devmountain-perf-net
+    environment:
+      - NODE_ENV=development
+
+networks:
+  devmountain-perf-net:
+    external: true
