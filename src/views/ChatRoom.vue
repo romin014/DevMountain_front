@@ -1,22 +1,13 @@
 <template>
   <div class="chat-room">
     <div class="chat-header">
-      <h2>회원 채팅방</h2>
+      <h2>{{ getHeaderTitle() }}</h2>
       <div class="membership-status">
         <img
-            :src="freeMembershipIcon"
-            alt="Free 멤버십"
+            :src="getMembershipIcon()"
+            :alt="getMembershipAlt()"
             class="membership-icon"
-            title="Free 멤버십 혜택:
-• 무제한 채팅 이용
-• AI 강의 추천
-• 기본 학습 경로 제공
-• 시간당 10개 채팅 가능
-
-Pro 멤버십 업그레이드 시:
-• AI 강의 추천
-• 기본 학습 경로 제공
-• 시간당 20개 채팅 가능"
+            :title="getMembershipTooltip()"
         />
       </div>
     </div>
@@ -69,9 +60,10 @@ Pro 멤버십 업그레이드 시:
 
 <script setup>
 // Vue의 반응형 변수, 라이프사이클 훅, axios 등 import
-import { ref, watch, onUnmounted } from 'vue'
+import { ref, watch, onUnmounted, onMounted } from 'vue'
 import axios from 'axios'
 import freeMembershipIcon from '@/assets/free.png'
+import proMembershipIcon from '@/assets/pro.png'
 
 // 부모 컴포넌트로부터 roomId(채팅방), isGuest(비회원 여부) props로 전달받음
 const props = defineProps({
@@ -93,6 +85,78 @@ const ws = ref(null) // WebSocket 객체
 const isConnected = ref(false) // WebSocket 연결 상태
 const messagesContainer = ref(null) // 메시지 영역 DOM 참조
 const streamingAiMessage = ref(null)
+const userMembership = ref('FREE') // 사용자 멤버십 레벨
+
+// 사용자 정보 및 멤버십 조회
+const fetchUserInfo = async () => {
+  try {
+    const response = await axios.get('http://localhost:8080/users/me', { withCredentials: true })
+    userMembership.value = response.data.membership || 'FREE'
+  } catch (error) {
+    console.error('사용자 정보 조회 실패:', error)
+    userMembership.value = 'FREE' // 기본값
+  }
+}
+
+// 멤버십별 헤더 제목 반환
+const getHeaderTitle = () => {
+  switch (userMembership.value) {
+    case 'PRO':
+      return 'Pro 회원 채팅방'
+    case 'FREE':
+      return 'Free 회원 채팅방'
+    default:
+      return '회원 채팅방'
+  }
+}
+
+// 멤버십별 아이콘 반환
+const getMembershipIcon = () => {
+  switch (userMembership.value) {
+    case 'PRO':
+      return proMembershipIcon
+    case 'FREE':
+    default:
+      return freeMembershipIcon
+  }
+}
+
+// 멤버십별 alt 텍스트 반환
+const getMembershipAlt = () => {
+  switch (userMembership.value) {
+    case 'PRO':
+      return 'Pro 멤버십'
+    case 'FREE':
+    default:
+      return 'Free 멤버십'
+  }
+}
+
+// 멤버십별 툴팁 텍스트 반환
+const getMembershipTooltip = () => {
+  switch (userMembership.value) {
+    case 'PRO':
+      return `Pro 멤버십 혜택:
+• AI 강의 추천
+• 기본 학습 경로 제공
+• 시간당 20개 채팅 가능
+• 우선 고객 지원
+• 고급 AI 기능 사용`
+    case 'FREE':
+    default:
+      return `Free 멤버십 혜택:
+• AI 강의 추천
+• 기본 학습 경로 제공
+• 시간당 10개 채팅 가능
+
+Pro 멤버십 업그레이드 시:
+• AI 강의 추천
+• 기본 학습 경로 제공
+• 시간당 20개 채팅 가능
+• 우선 고객 지원
+• 고급 AI 기능 사용`
+  }
+}
 
 // 과거 메시지 불러오기(채팅방 진입/새로고침 시)
 const fetchMessages = async () => {
@@ -361,6 +425,11 @@ watch(() => props.roomId, (newRoomId, oldRoomId) => {
     if (newRoomId) connectWebSocket()
   }
 }, { immediate: true })
+
+// 컴포넌트 마운트 시 사용자 정보 조회
+onMounted(() => {
+  fetchUserInfo()
+})
 
 // 컴포넌트 언마운트 시 WebSocket 정리
 onUnmounted(() => {
