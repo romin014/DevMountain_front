@@ -32,7 +32,7 @@ const onClick = async () => {
   }
 
   try {
-    const res = await fetch('http://localhost:8080/api/orders', {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_ORDERS}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

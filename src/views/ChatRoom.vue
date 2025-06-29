@@ -90,7 +90,10 @@ const userMembership = ref('FREE') // 사용자 멤버십 레벨
 // 사용자 정보 및 멤버십 조회
 const fetchUserInfo = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/users/me', { withCredentials: true })
+    const response = await axios.get(
+      `${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_GET_USER}`, 
+      { withCredentials: true }
+    )
     userMembership.value = response.data.membership || 'FREE'
   } catch (error) {
     console.error('사용자 정보 조회 실패:', error)
@@ -163,7 +166,7 @@ const fetchMessages = async () => {
   if (!props.roomId || props.isGuest) return // 방 ID 없거나 비회원이면 무시
   try {
     const response = await axios.get(
-        `http://localhost:8080/chatrooms/${props.roomId}/messages`,
+        `${import.meta.env.VITE_API_BASE_URL}/${import.meta.env.VITE_ENDPOINT_CHATROOMS}/${props.roomId}/messages`,
         { withCredentials: true }
     )
 
@@ -241,7 +244,16 @@ const connectWebSocket = () => {
 
   console.log('WebSocket 연결 시도:', props.roomId)
   const token = localStorage.getItem('token')
-  const wsUrl = `ws://localhost:8080/ws/chat?roomId=${props.roomId}${token ? `&token=${token}` : ''}`
+  const params = { roomId: props.roomId }
+  if (token) params.token = token
+  
+  const wsBaseUrl = import.meta.env.VITE_WS_BASE_URL
+  const wsEndpoint = import.meta.env.VITE_ENDPOINT_WS_CHAT
+  const queryString = Object.keys(params)
+    .map(key => `${key}=${encodeURIComponent(params[key])}`)
+    .join('&')
+  const wsUrl = queryString ? `${wsBaseUrl}${wsEndpoint}?${queryString}` : `${wsBaseUrl}${wsEndpoint}`
+  
   ws.value = new WebSocket(wsUrl)
   ws.value.onopen = () => {
     console.log('WebSocket 연결 성공')
@@ -314,7 +326,7 @@ const sendMessage = async () => {
   if (!newMessage.value.trim() || !props.roomId) return
   try {
     const response = await axios.post(
-        `http://localhost:8080/chatrooms/${props.roomId}/messages`,
+        `${import.meta.env.VITE_API_BASE_URL}/${import.meta.env.VITE_ENDPOINT_CHATROOMS}/${props.roomId}/messages`,
         { message: newMessage.value.trim() },
         { withCredentials: true }
     )

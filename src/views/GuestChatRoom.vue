@@ -5,7 +5,7 @@
       <!-- 멤버십 아이콘 -->
 <!--      <a href="https://www.flaticon.com/kr/free-icons/" title=" 아이콘"> 아이콘 제작자: Freepik - Flaticon</a>-->
       <div class="membership-status">
-        <img 
+        <img
           :src="guestMembershipIcon" 
           alt="비회원" 
           class="membership-icon"
@@ -14,9 +14,10 @@
 • 기본 AI 응답 제공
 
 멤버십 업그레이드 시:
-• 무제한 채팅 이용
 • AI 강의 추천
-• 기본 학습 경로 제공"
+• 기본 학습 경로 제공
+• 시간당 10개 채팅 가능
+"
         />
       </div>
     </div>
@@ -69,7 +70,15 @@ const streamingAiMessage = ref(null)
 const connectWebSocket = () => {
   if (!props.roomId) return
 
-  socket.value = new WebSocket(`ws://localhost:8080/ws/chat?roomId=${props.roomId}`)
+  const wsBaseUrl = import.meta.env.VITE_WS_BASE_URL
+  const wsEndpoint = import.meta.env.VITE_ENDPOINT_WS_CHAT
+  const params = { roomId: props.roomId }
+  const queryString = Object.keys(params)
+    .map(key => `${key}=${encodeURIComponent(params[key])}`)
+    .join('&')
+  const wsUrl = queryString ? `${wsBaseUrl}${wsEndpoint}?${queryString}` : `${wsBaseUrl}${wsEndpoint}`
+  
+  socket.value = new WebSocket(wsUrl)
 
   socket.value.onopen = () => console.log('WebSocket 연결 성공 (비회원)')
 

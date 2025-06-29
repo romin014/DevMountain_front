@@ -47,54 +47,76 @@
 
 <script>
 import axios from 'axios'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 export default {
-  data: () => ({
-    email: "",
-    password: "",
-    name: "",
-    phoneNumber: "",
-    categories: "",
-    isLoading: false,
-    errorMessage: "",
-    successMessage: "",
-  }),
-  methods: {
-    signUp() {
-      if (!this.email || !this.password || !this.name || !this.phoneNumber) {
-        alert("모든 필드를 작성해주세요.");
-        return;
+  setup() {
+    const router = useRouter()
+    const email = ref("")
+    const password = ref("")
+    const name = ref("")
+    const phoneNumber = ref("")
+    const categories = ref("")
+    const isLoading = ref(false)
+    const errorMessage = ref("")
+    const successMessage = ref("")
+
+    const signUp = async () => {
+      if (!email.value || !password.value || !name.value || !phoneNumber.value) {
+        alert("모든 필드를 작성해주세요.")
+        return
       }
 
       const saveData = {
-        email: this.email,
-        password: this.password,
-        name: this.name,
-        phoneNumber: this.phoneNumber,
-        categories: this.categories.split(',')
+        email: email.value,
+        password: password.value,
+        name: name.value,
+        phoneNumber: phoneNumber.value,
+        categories: categories.value.split(',')
             .map(c => c.trim())
             .filter(c => c.length > 0)
-      };
+      }
 
-      axios.post("http://localhost:8080/users/signup", saveData, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }).then(response => {
-        if (response.data.errorCode === 400) {
-          alert(response.data.errorMessage);
+      try {
+        const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_SIGNUP}`, saveData, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (response.data.success) {
+          alert('회원가입이 완료되었습니다!')
+          router.push('/login')
         } else {
-          alert("회원가입이 완료되었습니다. 로그인 화면으로 돌아갑니다");
-          this.$router.push({path: '/users/login'});
+          alert(response.data.message || '회원가입에 실패했습니다.')
         }
-      }).catch(error => {
-        console.error("회원가입 실패:", error.response || error.message);
-        alert("서버 오류가 발생했습니다.");
-      });
-    },
-    socialLogin(provider) {
-      const baseUrl = "http://localhost:8080/oauth2/authorization";
-      window.location.href = `${baseUrl}/${provider}`;
+      } catch (error) {
+        console.error('회원가입 에러:', error)
+        if (error.response && error.response.data) {
+          alert(error.response.data.message || '회원가입에 실패했습니다.')
+        } else {
+          alert('회원가입에 실패했습니다.')
+        }
+      }
+    }
+
+    const socialLogin = (provider) => {
+      const baseUrl = `${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_OAUTH2_AUTHORIZATION}`
+      window.location.href = `${baseUrl}/${provider}`
+    }
+
+    return {
+      email,
+      password,
+      name,
+      phoneNumber,
+      categories,
+      isLoading,
+      errorMessage,
+      successMessage,
+      signUp,
+      socialLogin
     }
   }
 }

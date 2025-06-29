@@ -5,6 +5,7 @@ import axios from 'axios'
 import ChatRoomList from './ChatRoomList.vue'
 import ChatRoom from '@/views/ChatRoom.vue'
 import GuestChatRoom from '@/views/GuestChatRoom.vue'
+import { useRouter } from 'vue-router'
 
 // 사용자 이름(회원/비회원), 게스트 여부, 채팅방 ID 등 상태 변수 선언
 const username = ref(localStorage.getItem('username') || '익명') // 사용자 이름(로컬스토리지 우선)
@@ -13,6 +14,9 @@ const guestRoomId = ref(null) // 비회원 채팅방 ID
 const roomId = ref(null) // 회원 채팅방 ID
 const ws = ref(null) // WebSocket 객체(예비)
 const loginMessage = ref('') // 소셜 로그인 성공 메시지
+const user = ref(null)
+const chatRooms = ref([])
+const router = useRouter()
 
 // 실제로 사용할 채팅방 ID(회원/비회원 구분)
 const resolvedRoomId = computed(() => {
@@ -28,6 +32,34 @@ const handleRoomSelect = (newRoomId) => {
   if (ws.value) {
     ws.value.close()
     ws.value = null
+  }
+}
+
+// 사용자 정보 조회
+const fetchUserInfo = async () => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_GET_USER}`,
+      { withCredentials: true }
+    )
+    user.value = response.data
+  } catch (error) {
+    console.error('사용자 정보 조회 실패:', error)
+  }
+}
+
+// 채팅방 목록 조회
+const fetchChatRooms = async () => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_CHATROOMS}`,
+      { withCredentials: true }
+    )
+    if (response.data.success) {
+      chatRooms.value = response.data.result
+    }
+  } catch (error) {
+    console.error('채팅방 목록 조회 실패:', error)
   }
 }
 
@@ -56,27 +88,23 @@ onMounted(async () => {
 
   try {
     // 회원 정보 조회(쿠키/세션 기반)
-    const res = await axios.get('http://localhost:8080/users/me', {
-      withCredentials: true
-    })
-    console.log('회원 정보 조회 성공:', res.data)
+    await fetchUserInfo()
+    console.log('회원 정보 조회 성공:', user.value)
     // name이 null이어도 email/userId가 있으면 회원으로 인식
-    if (!res.data || (!res.data.name && !res.data.email && !res.data.userId)) {
+    if (!user.value || (!user.value.name && !user.value.email && !user.value.userId)) {
       throw new Error('비회원')
     }
     // name이 null이면 email을 이름으로 사용
-    username.value = res.data.name || res.data.email || '회원'
+    username.value = user.value.name || user.value.email || '회원'
     localStorage.setItem('username', username.value)
     isGuest.value = false
 
     // 회원 채팅방 목록 조회
-    const roomsResponse = await axios.get('http://localhost:8080/chatrooms', {
-      withCredentials: true
-    })
-    console.log('채팅방 목록 조회 성공:', roomsResponse.data)
+    await fetchChatRooms()
+    console.log('채팅방 목록 조회 성공:', chatRooms.value)
     // 첫 번째 채팅방을 기본 선택(추후 localStorage 연동 가능)
-    if (roomsResponse.data.result && roomsResponse.data.result.length > 0) {
-      roomId.value = roomsResponse.data.result[0].chatroomId
+    if (chatRooms.value.length > 0) {
+      roomId.value = chatRooms.value[0].chatroomId
       console.log('첫 번째 채팅방 선택:', roomId.value)
     }
   } catch (e) {
@@ -94,13 +122,22 @@ onMounted(async () => {
   }
 })
 
-// 로그아웃 처리(세션 종료 및 새로고침)
+// 로그아웃 처리
 const handleLogout = async () => {
-  await axios.post('http://localhost:8080/logout', null, {
-    withCredentials: true
-  })
-  localStorage.removeItem('username')
-  location.reload()
+  try {
+    await axios.post(
+      `${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_LOGOUT}`,
+      {},
+      { withCredentials: true }
+    )
+    localStorage.removeItem('token')
+    router.push('/login')
+  } catch (error) {
+    console.error('로그아웃 실패:', error)
+    // 에러가 발생해도 로컬 토큰은 삭제하고 로그인 페이지로 이동
+    localStorage.removeItem('token')
+    router.push('/login')
+  }
 }
 </script>
 

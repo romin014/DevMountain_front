@@ -43,7 +43,15 @@ const messages = ref([{sender: '시스템', text: '채팅방에 입장했습니�
 const newMessage = ref('')
 
 const connectWebSocket = () => {
-  socket.value = new WebSocket(`ws://localhost:8080/ws/chat?roomId=${roomId}`)
+  const wsBaseUrl = import.meta.env.VITE_WS_BASE_URL
+  const wsEndpoint = import.meta.env.VITE_ENDPOINT_WS_CHAT
+  const params = { roomId: roomId }
+  const queryString = Object.keys(params)
+    .map(key => `${key}=${encodeURIComponent(params[key])}`)
+    .join('&')
+  const wsUrl = queryString ? `${wsBaseUrl}${wsEndpoint}?${queryString}` : `${wsBaseUrl}${wsEndpoint}`
+  
+  socket.value = new WebSocket(wsUrl)
 
   socket.value.onopen = () => {
     console.log('WebSocket 연결 성공')
@@ -62,7 +70,6 @@ const connectWebSocket = () => {
 
     scrollToBottom()
   }
-
 
   socket.value.onclose = () => {
     console.log('WebSocket 연결 종료')
@@ -88,7 +95,6 @@ const sendMessage = () => {
   newMessage.value = ''
   scrollToBottom()
 }
-
 
 const scrollToBottom = () => {
   setTimeout(() => {

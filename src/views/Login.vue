@@ -60,12 +60,16 @@ const login = async () => {
 
   try {
     const res = await axios.post(
-        'http://localhost:8080/users/login',
+        `${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_LOGIN}`,
         {
           email: email.value,
           password: password.value
         },
-        { withCredentials: true }
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
     );
     console.log('로그인 성공:', res.data);
 
@@ -96,7 +100,7 @@ const login = async () => {
 
 // 소셜 로그인 함수 추가
 const socialLogin = (provider) => {
-  window.location.href = `http://localhost:8080/oauth2/authorization/${provider}`;
+  window.location.href = `${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_OAUTH2_AUTHORIZATION}/${provider}`;
 };
 </script>
 

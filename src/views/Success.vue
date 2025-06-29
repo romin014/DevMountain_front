@@ -23,7 +23,7 @@ onMounted(async () => {
   }
 
   try {
-    const res = await axios.post('http://localhost:8080/api/orders/confirm-payment', {
+    const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_CONFIRM_PAYMENT}`, {
         paymentKey,
         orderId,
         amount: parseInt(amount)

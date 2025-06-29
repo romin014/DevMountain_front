@@ -75,14 +75,13 @@ const selectRoom = (room) => {
 
 const fetchChatRooms = async () => {
   try {
-    console.log('채팅방 목록 조회 시작')
-    const response = await axios.get('http://localhost:8080/chatrooms', {
-      withCredentials: true
-    })
-    console.log('채팅방 목록 응답:', response.data)
-    // 새 배열로 할당하여 반응성 보장
-    chatRooms.value = [...(response.data.result || [])]
-    console.log('chatRooms.value 할당 후:', chatRooms.value)
+    const response = await axios.get(
+      `${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_CHATROOMS}`,
+      { withCredentials: true }
+    )
+    if (response.data.success) {
+      chatRooms.value = response.data.result
+    }
   } catch (error) {
     console.error('채팅방 목록 조회 실패:', error)
   }
@@ -93,7 +92,7 @@ const createRoom = async () => {
   const defaultRoomName = ''
   try {
     const response = await axios.post(
-        'http://localhost:8080/chatrooms',
+        `${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_CHATROOMS}`,
         {
           chatroomName: defaultRoomName
         },
@@ -129,7 +128,7 @@ const deleteRoom = async () => {
 
   try {
     const response = await axios.delete(
-        `http://localhost:8080/chatrooms/${roomToDelete.value.chatroomId}`,
+        `${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_CHATROOMS}/${roomToDelete.value.chatroomId}`,
         { withCredentials: true }
     )
 
