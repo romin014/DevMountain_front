@@ -68,7 +68,8 @@ const login = async () => {
         {
           headers: {
             'Content-Type': 'application/json'
-          }
+          },
+          withCredentials: true
         }
     );
     console.log('로그인 성공:', res.data);

@@ -326,9 +326,9 @@ const sendMessage = async () => {
   if (!newMessage.value.trim() || !props.roomId) return
   try {
     const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/${import.meta.env.VITE_ENDPOINT_CHATROOMS}/${props.roomId}/messages`,
-        { message: newMessage.value.trim() },
-        { withCredentials: true }
+      `${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_CHATROOMS}/${props.roomId}/messages`,
+      { message: newMessage.value },
+      { withCredentials: true }
     )
     if (response.data.success) {
       // 내 메시지 화면에 추가

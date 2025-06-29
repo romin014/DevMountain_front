@@ -82,7 +82,8 @@ export default {
         const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_SIGNUP}`, saveData, {
           headers: {
             'Content-Type': 'application/json'
-          }
+          },
+          withCredentials: true
         })
 
         if (response.data.success) {
