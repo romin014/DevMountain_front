@@ -25,8 +25,17 @@
             <div class="message-sender">{{ getMessageSender(message) }}</div>
           </div>
           <div v-if="message.messageType === 'RECOMMENDATION' && !isChatLikeRecommendation(message) && hasRecommendations(message)" class="recommendation-cards">
-            <div v-for="(course, idx) in parseRecommendation(message)" :key="idx" class="course-card">
-              <div class="course-thumbnail">
+            <div
+                v-for="(course, idx) in parseRecommendation(message)"
+                :key="idx"
+                class="course-card"
+                :class="{
+                    'type-vector': course.type === 'VECTOR',
+                    'type-brave': course.type === 'BRAVE',
+                    'type-youtube': course.type === 'YOUTUBE'
+                }"
+            >
+              <div v-if="course.thumbnailUrl" class="course-thumbnail">
                 <img :src="course.thumbnailUrl" :alt="course.title" class="thumbnail-image" />
               </div>
               <div class="course-info">
@@ -676,6 +685,21 @@ onUnmounted(() => {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
+.course-card.type-vector {
+  background: linear-gradient(135deg, #3f51b5, #5c6bc0); /* 파란 계열 */
+  border: 1px solid #303f9f;
+}
+
+.course-card.type-brave {
+  background: linear-gradient(135deg, #ff7043, #ff8a65); /* 주황 계열 */
+  border: 1px solid #e64a19;
+}
+
+.course-card.type-youtube {
+  background: linear-gradient(135deg, #d32f2f, #f44336); /* 빨간 계열 */
+  border: 1px solid #b71c1c;
+}
+
 .course-thumbnail {
   width: 100%;
   height: 180px;
@@ -735,11 +759,11 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #bbb;
+  color: #000000;
   font-size: 0.9em;
-  background-color: rgba(255, 255, 255, 0.05);
-  padding: 6px 12px;
-  border-radius: 20px;
+  background-color: rgba(255, 255, 255, 0.67);
+  padding: 6px 6px;
+  border-radius: 15px;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
