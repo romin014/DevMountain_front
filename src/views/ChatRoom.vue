@@ -166,7 +166,7 @@ const fetchMessages = async () => {
   if (!props.roomId || props.isGuest) return // 방 ID 없거나 비회원이면 무시
   try {
     const response = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/${import.meta.env.VITE_ENDPOINT_CHATROOMS}/${props.roomId}/messages`,
+        `${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_CHATROOMS}/${props.roomId}/messages`,
         { withCredentials: true }
     )
 

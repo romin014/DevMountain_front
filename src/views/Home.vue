@@ -131,12 +131,12 @@ const handleLogout = async () => {
       { withCredentials: true }
     )
     localStorage.removeItem('token')
-    router.push('/login')
+    router.push('/users/login')
   } catch (error) {
     console.error('로그아웃 실패:', error)
     // 에러가 발생해도 로컬 토큰은 삭제하고 로그인 페이지로 이동
     localStorage.removeItem('token')
-    router.push('/login')
+    router.push('/users/login')
   }
 }
 </script>
