@@ -349,9 +349,12 @@ const sendMessage = async () => {
       }
     }
   } catch (error) {
-    if (error.response && error.response.status === 429) {
-      // 서버에서 내려준 메시지 보여주기
-      alert(error.response.data || '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
+    if (error.response && error.response.data) {
+      // error.response.data가 문자열인지 객체인지 판별
+      const msg = typeof error.response.data === 'string'
+        ? error.response.data
+        : (error.response.data.message || '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
+      alert(msg);
     } else {
       console.error('메시지 전송 실패:', error)
       alert('메시지 전송에 실패했습니다')

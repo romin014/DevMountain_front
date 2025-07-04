@@ -86,14 +86,10 @@ export default {
           withCredentials: true
         })
 
-        if (response.data.success) {
-          alert('회원가입이 완료되었습니다!')
-          router.push('/login')
-        } else {
-          alert(response.data.message || '회원가입에 실패했습니다.')
-        }
+        // 성공 응답이면 무조건 성공 처리
+        alert('회원가입이 완료되었습니다!')
+        router.push('/login')
       } catch (error) {
-        console.error('회원가입 에러:', error)
         if (error.response && error.response.data) {
           alert(error.response.data.message || '회원가입에 실패했습니다.')
         } else {
