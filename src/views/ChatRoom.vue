@@ -24,7 +24,9 @@
           <div class="message-header">
             <div class="message-sender">{{ getMessageSender(message) }}</div>
           </div>
-          <div v-if="message.messageType === 'RECOMMENDATION' && !isChatLikeRecommendation(message) && hasRecommendations(message)" class="recommendation-cards">
+          <div
+              v-if="message.messageType === 'RECOMMENDATION' && !isChatLikeRecommendation(message) && hasRecommendations(message)"
+              class="recommendation-cards">
             <div
                 v-for="(course, idx) in parseRecommendation(message)"
                 :key="idx"
@@ -36,7 +38,7 @@
                 }"
             >
               <div v-if="course.thumbnailUrl" class="course-thumbnail">
-                <img :src="course.thumbnailUrl" :alt="course.title" class="thumbnail-image" />
+                <img :src="course.thumbnailUrl" :alt="course.title" class="thumbnail-image"/>
               </div>
               <div class="course-info">
                 <h3 class="course-title">{{ course.title }}</h3>
@@ -45,7 +47,8 @@
                   <span class="instructor">👨‍🏫 {{ course.instructor }}</span>
                   <span class="level">📚 {{ course.level }}</span>
                 </div>
-                <a v-if="course.url" :href="course.url" target="_blank" class="course-link" @click="console.log('Link clicked:', course.url)">강의 보기 →</a>
+                <a v-if="course.url" :href="course.url" target="_blank" class="course-link"
+                   @click="console.log('Link clicked:', course.url)">강의 보기 →</a>
                 <div v-else class="course-no-link">링크 정보 없음</div>
               </div>
             </div>
@@ -55,21 +58,20 @@
       </div>
     </div>
 
-    <div class="chat-input">
+    <form @submit.prevent="sendMessage" class="chat-input">
       <input
           v-model="newMessage"
-          @keyup.enter="sendMessage"
           placeholder="메시지를 입력하세요..."
           :disabled="!isConnected"
       />
-      <button @click="sendMessage" :disabled="!isConnected">전송</button>
-    </div>
+      <button type="submit" :disabled="!isConnected">전송</button>
+    </form>
   </div>
 </template>
 
 <script setup>
 // Vue의 반응형 변수, 라이프사이클 훅, axios 등 import
-import { ref, watch, onUnmounted, onMounted } from 'vue'
+import {ref, watch, onUnmounted, onMounted} from 'vue'
 import axios from 'axios'
 import freeMembershipIcon from '@/assets/free.png'
 import proMembershipIcon from '@/assets/pro.png'
@@ -100,8 +102,8 @@ const userMembership = ref('FREE') // 사용자 멤버십 레벨
 const fetchUserInfo = async () => {
   try {
     const response = await axios.get(
-      `${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_GET_USER}`, 
-      { withCredentials: true }
+        `${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_GET_USER}`,
+        {withCredentials: true}
     )
     userMembership.value = response.data.membership || 'FREE'
   } catch (error) {
@@ -176,7 +178,7 @@ const fetchMessages = async () => {
   try {
     const response = await axios.get(
         `${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_CHATROOMS}/${props.roomId}/messages`,
-        { withCredentials: true }
+        {withCredentials: true}
     )
 
     if (response.data.success) {
@@ -253,16 +255,16 @@ const connectWebSocket = () => {
 
   console.log('WebSocket 연결 시도:', props.roomId)
   const token = localStorage.getItem('token')
-  const params = { roomId: props.roomId }
+  const params = {roomId: props.roomId}
   if (token) params.token = token
-  
+
   const wsBaseUrl = import.meta.env.VITE_WS_BASE_URL
   const wsEndpoint = import.meta.env.VITE_ENDPOINT_WS_CHAT
   const queryString = Object.keys(params)
-    .map(key => `${key}=${encodeURIComponent(params[key])}`)
-    .join('&')
+      .map(key => `${key}=${encodeURIComponent(params[key])}`)
+      .join('&')
   const wsUrl = queryString ? `${wsBaseUrl}${wsEndpoint}?${queryString}` : `${wsBaseUrl}${wsEndpoint}`
-  
+
   ws.value = new WebSocket(wsUrl)
   ws.value.onopen = () => {
     console.log('WebSocket 연결 성공')
@@ -276,7 +278,7 @@ const connectWebSocket = () => {
       // 1. 방 이름 업데이트 메시지 처리
       if (data.type === "ROOM_NAME_UPDATE") {
         console.log("room name update");
-        window.dispatchEvent(new CustomEvent("roomNameUpdate", { detail: data }));
+        window.dispatchEvent(new CustomEvent("roomNameUpdate", {detail: data}));
         return;
       }
 
@@ -299,11 +301,9 @@ const connectWebSocket = () => {
           };
           messages.value.push(newAiMessage);
           streamingAiMessage.value = newAiMessage;
-        }
-        else if (!data.last && streamingAiMessage.value) {
+        } else if (!data.last && streamingAiMessage.value) {
           streamingAiMessage.value.message += data.message || '';
-        }
-        else if (data.last) {
+        } else if (data.last) {
           streamingAiMessage.value = null;
         }
 
@@ -335,9 +335,9 @@ const sendMessage = async () => {
   if (!newMessage.value.trim() || !props.roomId) return
   try {
     const response = await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_CHATROOMS}/${props.roomId}/messages`,
-      { message: newMessage.value },
-      { withCredentials: true }
+        `${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_CHATROOMS}/${props.roomId}/messages`,
+        {message: newMessage.value},
+        {withCredentials: true}
     )
     if (response.data.success) {
       // 내 메시지 화면에 추가
@@ -361,8 +361,8 @@ const sendMessage = async () => {
     if (error.response && error.response.data) {
       // error.response.data가 문자열인지 객체인지 판별
       const msg = typeof error.response.data === 'string'
-        ? error.response.data
-        : (error.response.data.message || '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
+          ? error.response.data
+          : (error.response.data.message || '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
       alert(msg);
     } else {
       console.error('메시지 전송 실패:', error)
@@ -448,7 +448,7 @@ watch(() => props.roomId, (newRoomId, oldRoomId) => {
     if (ws.value) ws.value.close()
     if (newRoomId) connectWebSocket()
   }
-}, { immediate: true })
+}, {immediate: true})
 
 // 컴포넌트 마운트 시 사용자 정보 조회
 onMounted(() => {
