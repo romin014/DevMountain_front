@@ -149,6 +149,7 @@ const deleteRoom = async () => {
         props.onRoomSelect(null)
       }
       window.dispatchEvent(new CustomEvent('roomNameUpdate'))
+      alert('채팅방이 삭제되었습니다.')
       return
     }
 
