@@ -53,6 +53,10 @@
               </div>
             </div>
           </div>
+          <div v-else-if="message.isLoading" class="message-text" style="text-align:center;">
+            <img :src="lodingGif" alt="로딩중..." style="width:48px; height:48px; display:inline-block;" />
+            <div style="color:#aaa; font-size:13px; margin-top:4px;">AI 응답 생성중...</div>
+          </div>
           <div v-else class="message-text">{{ formatMessage(message) }}</div>
         </div>
       </div>
@@ -75,6 +79,7 @@ import {ref, watch, onUnmounted, onMounted} from 'vue'
 import axios from 'axios'
 import freeMembershipIcon from '@/assets/free.png'
 import proMembershipIcon from '@/assets/pro.png'
+import lodingGif from '@/assets/loding.gif'
 
 // 부모 컴포넌트로부터 roomId(채팅방), isGuest(비회원 여부) props로 전달받음
 const props = defineProps({
@@ -97,6 +102,8 @@ const isConnected = ref(false) // WebSocket 연결 상태
 const messagesContainer = ref(null) // 메시지 영역 DOM 참조
 const streamingAiMessage = ref(null)
 const userMembership = ref('FREE') // 사용자 멤버십 레벨
+const isLoadingAi = ref(false)
+const loadingMessageId = ref(null)
 
 // 사용자 정보 및 멤버십 조회
 const fetchUserInfo = async () => {
@@ -290,10 +297,14 @@ const connectWebSocket = () => {
       }
 
       // 3. AI 채팅 메시지 스트리밍 처리 (타이핑 효과 구현)
-      // [수정] data.isAiResponse -> data.aiResponse 로 변경
       if (data.aiResponse && data.messageType === 'CHAT') {
-
-        // data.first, data.last 는 이전 답변에서 수정한 그대로 유지합니다.
+        // 로딩 메시지 제거
+        if (isLoadingAi.value && loadingMessageId.value) {
+          const idx = messages.value.findIndex(m => m.isLoading && m.id === loadingMessageId.value)
+          if (idx !== -1) messages.value.splice(idx, 1)
+          isLoadingAi.value = false
+          loadingMessageId.value = null
+        }
         if (data.first) {
           const newAiMessage = {
             ...data,
@@ -306,14 +317,19 @@ const connectWebSocket = () => {
         } else if (data.last) {
           streamingAiMessage.value = null;
         }
-
         scrollToBottom();
-        return; // 스트리밍 메시지 처리가 끝나면 여기서 함수를 종료합니다.
+        return;
       }
 
       // 4. 스트리밍이 아닌 다른 AI 응답이 있을 경우를 위한 폴백
-      // (위의 if문에서 return 처리되므로, 스트리밍 메시지는 이 코드를 실행하지 않습니다)
       if (data.aiResponse) {
+        // 로딩 메시지 제거
+        if (isLoadingAi.value && loadingMessageId.value) {
+          const idx = messages.value.findIndex(m => m.isLoading && m.id === loadingMessageId.value)
+          if (idx !== -1) messages.value.splice(idx, 1)
+          isLoadingAi.value = false
+          loadingMessageId.value = null
+        }
         messages.value.push(data);
         scrollToBottom();
       }
@@ -355,11 +371,21 @@ const sendMessage = async () => {
           roomId: props.roomId
         }
         ws.value.send(JSON.stringify(aiRequest))
+        // 로딩 메시지 추가
+        isLoadingAi.value = true
+        const loadingId = Date.now() + Math.random()
+        loadingMessageId.value = loadingId
+        messages.value.push({
+          messageType: 'CHAT',
+          aiResponse: true,
+          isLoading: true,
+          id: loadingId
+        })
+        scrollToBottom()
       }
     }
   } catch (error) {
     if (error.response && error.response.data) {
-      // error.response.data가 문자열인지 객체인지 판별
       const msg = typeof error.response.data === 'string'
           ? error.response.data
           : (error.response.data.message || '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
