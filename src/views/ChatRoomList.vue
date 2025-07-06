@@ -128,24 +128,48 @@ const deleteRoom = async () => {
 
   try {
     const response = await axios.delete(
-        `${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_CHATROOMS}/${roomToDelete.value.chatroomId}`,
-        { withCredentials: true }
+      `${import.meta.env.VITE_API_BASE_URL}${import.meta.env.VITE_ENDPOINT_CHATROOMS}/${roomToDelete.value.chatroomId}`,
+      { withCredentials: true }
     )
 
-    if (response.data.success) {
+    // 응답이 없거나, success가 true이거나, status가 204면 성공 처리
+    if (
+      !response.data ||
+      response.data.success ||
+      response.status === 204
+    ) {
       setTimeout(() => {
         fetchChatRooms()
       }, 1000)
       showDeleteModal.value = false
       roomToDelete.value = null
 
-      if (selectedRoomId.value === roomToDelete.value.chatroomId) {
+      if (selectedRoomId.value === roomToDelete.value?.chatroomId) {
         selectedRoomId.value = null
         props.onRoomSelect(null)
       }
       window.dispatchEvent(new CustomEvent('roomNameUpdate'))
+      return
     }
+
+    // 실패 처리
+    alert('채팅방 삭제에 실패했습니다: ' + (response.data?.message || '알 수 없는 오류'))
   } catch (error) {
+    // 204 No Content도 catch로 빠질 수 있음
+    if (error.response && error.response.status === 204) {
+      // 성공 처리
+      setTimeout(() => {
+        fetchChatRooms()
+      }, 1000)
+      showDeleteModal.value = false
+      roomToDelete.value = null
+      if (selectedRoomId.value === roomToDelete.value?.chatroomId) {
+        selectedRoomId.value = null
+        props.onRoomSelect(null)
+      }
+      window.dispatchEvent(new CustomEvent('roomNameUpdate'))
+      return
+    }
     console.error('채팅방 삭제 실패:', error)
     alert('채팅방 삭제에 실패했습니다')
   }
