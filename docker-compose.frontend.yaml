@@ -8,13 +8,13 @@ services:
     volumes:
       - ./:/app
     ports:
-      - "5173:5173"  # Vite 기본 포트
+      - "8080:5173"  # Vite 기본 포트
     command: sh -c "npm install && npm run dev -- --host"
     networks:
-      - devmountain-perf-net
+      - devmountain-net
     environment:
       - NODE_ENV=development
 
 networks:
-  devmountain-perf-net:
+  devmountain-net:
     external: true

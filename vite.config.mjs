@@ -9,7 +9,7 @@ import {fileURLToPath} from 'node:url'
 export default defineConfig(({ mode }) => {
     // 환경변수 로드
     const env = loadEnv(mode, process.cwd(), '')
-    
+
     return {
         define: {
             'process.env': {}, // 일부 라이브러리가 process 참조 시 에러 방지
