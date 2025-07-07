@@ -8,7 +8,7 @@ services:
     volumes:
       - ./:/app
     ports:
-      - "5173:5173"  # Vite 기본 포트
+      - "5173:443"  # 도메인 연결을 위한 443 외부포트(HTTPS)
     command: sh -c "npm install && npm run dev -- --host"
     networks:
       - devmountain-perf-net
