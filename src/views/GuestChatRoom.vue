@@ -32,7 +32,8 @@
           <div class="message-header">
             <span class="sender">{{ msg.sender }}</span>
           </div>
-          <div class="text" style="white-space: pre-wrap;">{{ msg.text }}</div>
+          <!-- 모든 메시지(추천 포함)를 아래처럼 출력 -->
+          <div class="text" style="white-space: pre-wrap;" v-html="formatMessageWithLinks(msg.text || msg.message || msg.content)"></div>
         </div>
       </div>
     </div>
@@ -119,7 +120,7 @@ const connectWebSocket = () => {
         case 'WELCOME':
         case 'ERROR':
           messages.value.push({
-            sender: '시스템',
+            sender: '시스템',  
             text: data.message
           })
           break
@@ -196,6 +197,20 @@ const scrollToBottom = () => {
     const container = document.querySelector('.chat-messages')
     if (container) container.scrollTop = container.scrollHeight
   }, 100)
+}
+
+const formatMessageWithLinks = (text) => {
+  if (!text) return ''
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g
+  return text.replace(urlRegex, (url) => {
+    const fullUrl = url.startsWith('www.') ? `http://${url}` : url
+    try {
+      new URL(fullUrl)
+      return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer" class="message-link">${url}</a>`
+    } catch {
+      return url
+    }
+  })
 }
 
 watch(() => props.roomId, (newVal) => {
@@ -371,7 +386,7 @@ body {
   opacity: 1;
 }
 
-/* 툴팁 스타일 */
+/* 툴크 스타일 */
 [title] {
   position: relative;
 }
@@ -419,4 +434,26 @@ body {
 .membership-icon:hover {
   opacity: 1;
 }
+
+/* 메시지 내 링크 스타일 */
+.message-link {
+  color: #0a84ff;
+  text-decoration: underline;
+  word-break: break-all;
+  transition: color 0.2s ease;
+}
+
+.message-link:hover {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.recommendation-card {
+  background: #232323;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 10px;
+}
+.rec-title { font-weight: bold; margin-bottom: 6px; }
+.rec-link { color: #0a84ff; text-decoration: underline; }
 </style>
