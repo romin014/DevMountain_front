@@ -291,6 +291,13 @@ const connectWebSocket = () => {
 
       // 2. 추천 메시지 처리
       if (data.messageType === 'RECOMMENDATION') {
+        // [추가] 로딩 메시지 제거
+        if (isLoadingAi.value && loadingMessageId.value) {
+          const idx = messages.value.findIndex(m => m.isLoading && m.id === loadingMessageId.value)
+          if (idx !== -1) messages.value.splice(idx, 1)
+          isLoadingAi.value = false
+          loadingMessageId.value = null
+        }
         messages.value.push(data);
         scrollToBottom();
         return;
